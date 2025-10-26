@@ -1,259 +1,378 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin" />
-    <meta http-equiv="Cross-Origin-Embedder-Policy" content="require-corp" />
-    <title>Private List Check · ZAMA FHEVM (v2)</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;800&display=swap" rel="stylesheet">
-    <style>
-      :root{
-        --bg: #faf7f2;           /* light sand */
-        --ink:#10121a;           /* near-black text */
-        --muted:#6b7280;         /* slate */
-        --card:#ffffff;          /* white cards */
-        --stroke:#e7e2da;        /* warm border */
-        --shadow: 0 10px 30px rgba(17,18,26,.08);
-        --radius:16px;
-        --brand:#7c3aed;         /* violet */
-        --accent:#f59e0b;        /* amber */
-        --ok:#10b981;            /* green */
-        --bad:#ef4444;           /* red */
-      }
-      *{box-sizing:border-box}
-      html,body{height:100%}
-      body{
-        font-family:'DM Sans', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-        color:var(--ink);
-        background:
-          radial-gradient(900px 500px at 0% 0%, #eae2ff40, transparent 60%),
-          radial-gradient(800px 600px at 100% 0%, #ffecc240, transparent 60%),
-          var(--bg);
-        margin:0;
-      }
-      .container{max-width:1200px;margin:0 auto;padding:28px 16px 56px}
-      header{
-        display:grid;grid-template-columns:1fr auto;align-items:center;gap:20px;margin-bottom:22px;
-      }
-      .brand{display:flex;align-items:center;gap:14px}
-      .logo{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--brand),#a78bfa);box-shadow:var(--shadow)}
-      h1{font-size:clamp(22px,3.2vw,30px);margin:0;font-weight:800}
-      .sub{font-size:13px;color:var(--muted)}
-      .top-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-      .pill{font-size:12px;color:var(--muted);border:1px solid var(--stroke);padding:8px 10px;border-radius:999px;background:#fff7}
-      .btn{appearance:none;border:1px solid var(--stroke);background:linear-gradient(180deg,#fff,#f8f7f5);padding:12px 16px;border-radius:12px;cursor:pointer;font-weight:800;letter-spacing:.2px;box-shadow:var(--shadow);}
-      .btn:disabled{opacity:.5;cursor:not-allowed}
-      .btn.primary{background:linear-gradient(135deg,#a78bfa,#7c3aed);color:white;border:0}
-      .btn.accent{background:linear-gradient(135deg,#ffd166,#f59e0b);color:#251a00;border:0}
-      .btn.ok{background:linear-gradient(135deg,#34d399,#10b981);color:white;border:0}
-      .btn.bad{background:linear-gradient(135deg,#f87171,#ef4444);color:white;border:0}
-
-      /* GRID: radically new layout */
-      .grid{display:grid;grid-template-columns: 1.2fr .8fr; gap:18px}
-      .row{display:grid;grid-template-columns:1fr 1fr; gap:18px}
-      @media (max-width: 980px){ .grid{grid-template-columns:1fr} .row{grid-template-columns:1fr} }
-
-      .card{background:var(--card); border:1px solid var(--stroke); border-radius:var(--radius); padding:18px 18px 16px; box-shadow:var(--shadow)}
-      .card h2{font-size:16px;margin:0 0 12px 0;font-weight:800;display:flex;align-items:center;gap:10px}
-      .kbd{border:1px solid var(--stroke);background:#fbfaf9;padding:2px 6px;border-radius:6px;font-size:12px;color:var(--muted)}
-
-      .field{margin-bottom:12px}
-      .field label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
-      .input, select{width:100%;padding:12px 12px;border:1px solid var(--stroke);border-radius:12px;outline:none;background:white;font-size:15px}
-      .input:focus, select:focus{border-color:#c4b5fd; box-shadow:0 0 0 3px #c4b5fd40}
-      .row-actions{display:flex;gap:10px;flex-wrap:wrap}
-
-      .status{margin-top:10px;padding:12px;border-radius:12px;border:1px dashed var(--stroke);background:#fff7;color:var(--muted);font-weight:700}
-      .result{display:none;margin-top:10px;padding:14px;border-radius:12px;border:1px solid var(--stroke);text-align:center;font-weight:900}
-      .result.ok{color:var(--ok);border-color:#34d39980;background:#ecfdf5}
-      .result.bad{color:var(--bad);border-color:#f8717180;background:#fef2f2}
-
-      footer{margin-top:22px;color:var(--muted);font-size:12px;text-align:center}
-      .loading{position:relative}
-      .loading::after{content:"";position:absolute;right:12px;top:50%;transform:translateY(-50%);width:16px;height:16px;border-radius:50%;border:2px solid #00000022;border-top-color:#00000066;animation:spin 1s linear infinite}
-      @keyframes spin{to{transform:translateY(-50%) rotate(1turn)}}
-      code{background:#fbfaf9;border:1px solid var(--stroke);padding:2px 6px;border-radius:6px}
-    </style>
-  </head>
-  <body>
-    <div class="container">
-      <header>
-        <div class="brand">
-          <div class="logo"></div>
-          <div>
-            <h1>Private List Check</h1>
-            <div class="sub">ZAMA · FHEVM · Sepolia</div>
-          </div>
-        </div>
-        <div class="top-actions">
-          <span class="pill">Network: <b id="netInfo">—</b></span>
-          <span class="pill">Account: <b id="acctInfo">—</b></span>
-          <button id="btnConnect" class="btn primary">Connect MetaMask</button>
-        </div>
-      </header>
-
-      <!-- NEW LAYOUT: main left column is the Private Check, right column stacks Contract + Admin -->
-      <section class="grid">
-        <!-- LEFT: Private Check (wide) -->
-        <div class="card">
-          <h2>Private Check <span class="kbd">encrypted</span></h2>
-          <div class="row">
-            <div class="field">
-              <label>Address to check</label>
-              <input id="addr" class="input" placeholder="0x1234…" />
-            </div>
-            <div class="field">
-              <label>Mode</label>
-              <select id="mode">
-                <option value="whitelist">Whitelist</option>
-                <option value="blacklist">Blacklist</option>
-              </select>
-            </div>
-          </div>
-          <div class="row-actions" style="margin:6px 0 2px">
-            <button id="btnCheck" class="btn accent" disabled>Check</button>
-            <button id="btnLast" class="btn" disabled>Decrypt Last Result</button>
-          </div>
-          <div id="status" class="status">Waiting for connection…</div>
-          <div id="result" class="result">—</div>
-        </div>
-
-        <!-- RIGHT: Contract info + Admin stacked -->
-        <div class="row">
-          <div class="card">
-            <h2>Contract</h2>
-            <div class="field"><label>Address</label><div class="pill" style="display:inline-block;user-select:all">0x8Ac1d3E49A73F8328e43719dCF6fBfeF4405937B</div></div>
-            <div class="field"><label>Mode</label><div class="pill">KMS (Sepolia)</div></div>
-            <div class="field"><label>KMS</label><div class="pill" style="display:inline-block;user-select:all">0x1364cBBf2cDF5032C47d8226a6f6FBD2AFCDacAC</div></div>
-          </div>
-          <div class="card">
-            <h2>Admin (optional)</h2>
-            <div class="field">
-              <label>Address to add (UI encrypts it)</label>
-              <input id="adminHandle" class="input" placeholder="0xabc…" />
-            </div>
-            <div class="row-actions">
-              <button id="btnAddW" class="btn ok" disabled>Add to Whitelist</button>
-              <button id="btnAddB" class="btn bad" disabled>Add to Blacklist</button>
-            </div>
-            <div style="margin-top:8px;color:var(--muted);font-size:12px">Owner-only actions. The raw address never leaves the browser.</div>
-          </div>
-        </div>
-      </section>
-
-      <section class="card" style="margin-top:18px">
-        <h2>How it works</h2>
-        <ol style="margin:0;padding-left:18px;color:var(--muted);line-height:1.6">
-          <li>Address is encrypted locally via ZAMA Relayer SDK.</li>
-          <li>Contract iterates over encrypted set and compares using <code>FHE.eq</code>.</li>
-          <li>Only encrypted boolean is published; UI requests <code>publicDecrypt</code>.</li>
-        </ol>
-      </section>
-
-      <footer>
-        UI language: English · This page logs handles/proofs/tx hashes only (no raw addresses).
-      </footer>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Private Event Eligibility · Zama FHEVM</title>
+  <style>
+    :root{
+      --bg:#0f1117; --panel:#151a24; --ink:#e8eef8; --muted:#8aa0b2;
+      --line:#223049; --accent:#5eead4; --accent2:#60a5fa; --warn:#f59e0b; --good:#22c55e; --bad:#ef4444;
+      --chip:#0d1726; --br:16px; --shadow:0 10px 30px rgba(0,0,0,.35);
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;height:100%}
+    body{
+      background:radial-gradient(1200px 800px at 20% -10%, rgba(96,165,250,.08), transparent),
+                 radial-gradient(1000px 700px at 110% 10%, rgba(94,234,212,.08), transparent),
+                 var(--bg);
+      color:var(--ink); font:16px/1.45 Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif
+    }
+    .wrap{max-width:1120px;margin:26px auto;padding:0 16px}
+    header.top{display:flex;gap:14px;align-items:center;margin-bottom:18px;flex-wrap:wrap}
+    .logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:18px}
+    .logoMark{width:30px;height:30px;border-radius:10px;background:conic-gradient(from 180deg,#5eead4,#60a5fa,#5eead4)}
+    .badge{background:var(--chip); border:1px solid var(--line); color:var(--muted);
+           border-radius:999px; padding:8px 12px; font-size:12px}
+    .btn{appearance:none;border:0;cursor:pointer;border-radius:12px;padding:10px 14px;
+         color:#0b1220;background:linear-gradient(180deg,#7dd3fc,#60a5fa); font-weight:800}
+    .btn:disabled{opacity:.6;cursor:not-allowed}
+    .btn.alt{background:linear-gradient(180deg,#34d399,#22c55e)}
+    .btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+    .grid{display:grid;grid-template-columns: 1.1fr .9fr; gap:18px}
+    @media (max-width:980px){ .grid{grid-template-columns:1fr} }
+    .card{background:linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01)), #151a24;
+          border:1px solid var(--line); border-radius:var(--br); box-shadow:var(--shadow); padding:18px}
+    h2{margin:0 0 10px 0; font-size:18px}
+    p.lead{margin:0 0 12px 0; color:var(--muted)}
+    label{display:block; color:var(--muted); font-weight:700; font-size:12px; letter-spacing:.6px; text-transform:uppercase; margin-bottom:8px}
+    input, select{width:100%; background:#0b1220; border:1px solid var(--line); color:var(--ink); border-radius:12px; padding:12px; outline:none}
+    input:focus, select:focus{border-color:#3b82f6; box-shadow:0 0 0 4px rgba(59,130,246,.15)}
+    .row{display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap}
+    .hint{color:var(--muted); font-size:12px}
+    .line{height:6px; border-radius:999px; background:#0b1220; border:1px solid var(--line); overflow:hidden}
+    .line>span{display:block; height:100%; width:0%; background:linear-gradient(90deg,#60a5fa,#5eead4)}
+    .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace}
+    .handles{font-size:12px; background:#0b1220; border:1px dashed var(--line); padding:10px; border-radius:10px; color:#c7d7e6; word-break:break-all}
+    .status{min-height:20px;color:var(--muted); font-size:13px}
+    .log{background:#0b1220; border:1px solid var(--line); border-radius:12px; padding:10px; height:180px; overflow:auto; font-size:12px}
+    .twocol{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+    @media (max-width:640px){ .twocol{grid-template-columns:1fr} }
+  </style>
+</head>
+<body>
+<main class="wrap">
+  <header class="top">
+    <div class="logo">
+      <div class="logoMark"></div>
+      <div>
+        <div>Private Event Eligibility</div>
+        <div class="hint">Zama FHEVM · Encrypted checks only</div>
+      </div>
     </div>
+    <span id="netBadge" class="badge">Network: —</span>
+    <span id="addrBadge" class="badge">Contract: —</span>
+    <button id="btnConnect" class="btn" style="margin-left:auto">Connect Wallet</button>
+  </header>
 
-    <!-- Zama Relayer SDK (official) -->
-    <script type="module" crossorigin src="https://cdn.zama.ai/relayer-sdk-js/0.1.2/relayer-sdk-js.js"></script>
-    <!-- ethers v6 -->
-    <script type="module" crossorigin src="https://cdn.jsdelivr.net/npm/ethers@6.15.0/+esm"></script>
+  <section class="grid">
+    <article class="card">
+      <h2>Register Privately</h2>
+      <p class="lead">Age, country (ISO-3166 numeric), and invite flag are encrypted in one shot; the contract stores only your encrypted eligibility.</p>
 
-    <script type="module">
-      import { BrowserProvider, Contract, getAddress } from "https://cdn.jsdelivr.net/npm/ethers@6.15.0/+esm";
-      import { initSDK, createInstance, SepoliaConfig } from "https://cdn.zama.ai/relayer-sdk-js/0.1.2/relayer-sdk-js.js";
+      <div class="twocol">
+        <div>
+          <label>Age (years)</label>
+          <input id="age" type="number" min="0" placeholder="e.g. 25">
+        </div>
+        <div>
+          <label>Country (ISO numeric)</label>
+          <input id="country" type="number" min="0" placeholder="e.g. 840 = US">
+        </div>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <div style="flex:1">
+          <label>Invite Flag</label>
+          <select id="invite">
+            <option value="1">1 — I have an invitation</option>
+            <option value="0">0 — No invitation</option>
+          </select>
+        </div>
+        <button id="btnRegister" class="btn alt">Submit Encrypted</button>
+      </div>
+      <div class="status" id="regStatus">—</div>
+      <div class="line"><span id="regLine"></span></div>
 
-      // ===== Console helpers (simple) =====
-      const clog = {
-        banner(){ console.log('Private List Check ready'); },
-        group:t=>console.log(`--- ${t} ---`),
-        end:()=>{}, table:o=>console.log(o), kv:(k,v)=>console.log(`${k}:`, v)
-      }; clog.banner();
+      <div style="margin-top:14px">
+        <label>My Eligibility Handle</label>
+        <div class="row">
+          <button id="btnGetHandle" class="btn ghost">Get Handle</button>
+          <button id="btnPublicDecrypt" class="btn ghost">Public Decrypt</button>
+          <button id="btnUserDecrypt" class="btn ghost">User Decrypt</button>
+        </div>
+        <div class="handles mono" id="myHandle">—</div>
+        <div class="status" id="decStatus"></div>
+      </div>
+    </article>
 
-      // ===== DOM =====
-      const $ = (id)=>document.getElementById(id);
-      const btnConnect = $("btnConnect");
-      const btnCheck   = $("btnCheck");
-      const btnLast    = $("btnLast");
-      const btnAddW    = $("btnAddW");
-      const btnAddB    = $("btnAddB");
-      const addrInput  = $("addr");
-      const adminHandle= $("adminHandle");
-      const statusEl   = $("status");
-      const resultEl   = $("result");
-      const netInfo    = $("netInfo");
-      const acctInfo   = $("acctInfo");
-      const modeSel    = $("mode");
+    <article class="card">
+      <h2>Owner · Policy</h2>
+      <p class="lead">Set age threshold, whether an invite is required, and an allowlist of countries.</p>
 
-      // ===== Config =====
-      const CONTRACT_ADDRESS = getAddress("0x8Ac1d3E49A73F8328e43719dCF6fBfeF4405937B");
-      const RELAYER_URL = "https://relayer.testnet.zama.cloud";
-      const KMS_ADDRESS = getAddress("0x1364cBBf2cDF5032C47d8226a6f6FBD2AFCDacAC");
-      const CHAIN_HEX = "0xaa36a7"; // Sepolia
-      const CHAIN_ID  = 11155111n;
+      <div class="twocol">
+        <div>
+          <label>Event ID (bytes32 hex)</label>
+          <input id="eventId" placeholder="0x... (leave empty to use default)">
+        </div>
+        <div>
+          <label>Min Age</label>
+          <input id="minAge" type="number" min="0" placeholder="e.g. 21">
+        </div>
+      </div>
 
-      // ===== ABI =====
-      const abi = [
-        { inputs:[{name:"addrExt",type:"bytes32"},{name:"proof",type:"bytes"}], name:"checkWhitelistPublic", outputs:[{name:"",type:"bytes32"}], stateMutability:"nonpayable", type:"function" },
-        { inputs:[{name:"addrExt",type:"bytes32"},{name:"proof",type:"bytes"}], name:"checkBlacklistPublic", outputs:[{name:"",type:"bytes32"}], stateMutability:"nonpayable", type:"function" },
-        { inputs:[{name:"addrExt",type:"bytes32"},{name:"proof",type:"bytes"}], name:"addToWhitelist", outputs:[], stateMutability:"nonpayable", type:"function" },
-        { inputs:[{name:"addrExt",type:"bytes32"},{name:"proof",type:"bytes"}], name:"addToBlacklist", outputs:[], stateMutability:"nonpayable", type:"function" },
-        { inputs:[], name:"getLastResultHandle", outputs:[{name:"",type:"bytes32"}], stateMutability:"view", type:"function" },
-        { anonymous:false, inputs:[
-            {indexed:true,name:"user",type:"address"},
-            {indexed:false,name:"isWhitelist",type:"bool"},
-            {indexed:false,name:"scannedCount",type:"uint256"},
-            {indexed:false,name:"resultHandle",type:"bytes32"}
-          ], name:"MembershipChecked", type:"event" }
-      ];
+      <div class="twocol" style="margin-top:10px">
+        <div>
+          <label>Require Invite</label>
+          <select id="requireInvite">
+            <option value="true">true</option>
+            <option value="false">false</option>
+          </select>
+        </div>
+        <div>
+          <label>Allow Countries (comma)</label>
+          <input id="countries" placeholder="e.g. 840,124,380">
+        </div>
+      </div>
 
-      // ===== State =====
-      let provider, signer, user, relayer, contract; let lastHandle = null;
+      <div class="row" style="margin-top:10px">
+        <button id="btnSetPolicy" class="btn">Set Policy</button>
+        <button id="btnMakePublic" class="btn ghost">Make My Eligibility Public</button>
+      </div>
+      <div class="status" id="polStatus">—</div>
 
-      // ===== UI helpers =====
-      const setStatus = (t)=> statusEl.textContent=t;
-      function showResult(ok){ resultEl.style.display='block'; resultEl.classList.remove('ok','bad'); resultEl.classList.add(ok?'ok':'bad'); resultEl.textContent = ok? '✅ IN LIST' : '❌ OUT OF LIST'; }
-      const setLoading = (el,on)=> el && el.classList.toggle('loading', !!on);
-      function refreshButtons(){
-        const okAddr  = /^0x[0-9a-fA-F]{40}$/.test((addrInput.value||'').trim());
-        const okAdmin = /^0x[0-9a-fA-F]{40}$/.test((adminHandle.value||'').trim());
-        if (btnCheck) btnCheck.disabled = !signer || !okAddr;
-        if (btnAddW) btnAddW.disabled = !signer || !okAdmin;
-        if (btnAddB) btnAddB.disabled = !signer || !okAdmin;
-      }
-      function validateAddress(raw){ const s=(raw||'').trim(); if(!s) throw new Error('Enter an address'); if(!/^0x[0-9a-fA-F]{40}$/.test(s)) throw new Error('Invalid address format (0x + 40 hex)'); return getAddress(s); }
-      addrInput.addEventListener('input', refreshButtons); adminHandle.addEventListener('input', refreshButtons);
+      
+    </article>
+  </section>
 
-      // ===== Network guards =====
-      async function ensureSepolia(){ const id = await window.ethereum.request({ method:'eth_chainId' }); if (BigInt(id)!==CHAIN_ID){ await window.ethereum.request({ method:'wallet_switchEthereumChain', params:[{chainId: CHAIN_HEX}] }); } }
+  <footer style="margin:18px 0; color:#8aa0b2; text-align:center">
+    Relayer SDK 0.2.0 · Ethers v6 · Sepolia
+  </footer>
+</main>
 
-      // ===== Relayer helpers =====
-      function addAddressToBuf(buf, address){ if (typeof buf.addAddress==='function'){ buf.addAddress(address); return 'addAddress'; } if (typeof buf.add160==='function'){ buf.add160(BigInt(address)); return 'add160'; } throw new Error('Relayer SDK missing addAddress/add160'); }
-      const toHex = (u8)=> '0x'+Array.from(u8).map(b=>b.toString(16).padStart(2,'0')).join('');
-      async function encryptAddress(address){ clog.group('ENCRYPTION'); const buf = relayer.createEncryptedInput(CONTRACT_ADDRESS, user); const used = addAddressToBuf(buf, address); clog.kv('inputMethod', used); const { handles, inputProof } = await buf.encrypt(); const handle = toHex(handles[0]); const proof = toHex(inputProof); clog.table({ handle, proofBytes: inputProof.length, proofPreview: proof.slice(0,66)+'…' }); clog.end(); return { handle, proof }; }
+<script type="module" crossorigin src="https://cdn.zama.ai/relayer-sdk-js/0.2.0/relayer-sdk-js.js"></script>
+<script type="module" crossorigin src="https://cdn.jsdelivr.net/npm/ethers@6.15.0/+esm"></script>
 
-      async function callCheckPublic(mode, handle, proof){ const fn = mode==='blacklist' ? 'checkBlacklistPublic' : 'checkWhitelistPublic'; clog.group('CALL (public)'); clog.table({ fn, handle, proofLen: proof.length }); const tx = await contract[fn](handle, proof, { gasLimit: 3_000_000 }); clog.kv('txHash', tx.hash); const receipt = await tx.wait(); clog.table({ blockNumber: receipt.blockNumber, gasUsed: receipt.gasUsed.toString(), status: receipt.status }); let evtHandle=null; for (const lg of receipt.logs){ try{ const parsed=contract.interface.parseLog(lg); if(parsed && parsed.name==='MembershipChecked'){ evtHandle = parsed.args.resultHandle; clog.kv('event.handle', evtHandle); break; } }catch{} } if(!evtHandle){ try{ evtHandle = await contract.getLastResultHandle(); clog.kv('getLastResultHandle()', evtHandle); }catch{} } clog.end(); if(!evtHandle) throw new Error('No public handle returned by contract'); lastHandle = evtHandle; return evtHandle; }
+<script type="module">
+  import { BrowserProvider, Contract, getAddress } from "https://cdn.jsdelivr.net/npm/ethers@6.15.0/+esm";
+  import { initSDK, createInstance, SepoliaConfig, generateKeypair } from "https://cdn.zama.ai/relayer-sdk-js/0.2.0/relayer-sdk-js.js";
 
-      async function decryptPublic(handle){ clog.group('DECRYPT (public)'); const out = await relayer.publicDecrypt([handle]); const value = Array.isArray(out) ? out[0] : out[handle]; clog.table({ handle, decrypted: String(value) }); clog.end(); return (typeof value==='bigint') ? (value===1n) : (Number(value)===1); }
+  const CONTRACT_ADDRESS = "0x6eF4EB5101C4D442414f07C51E8C978eF997B2A5";
+  const RELAYER_URL = "https://relayer.testnet.zama.cloud";
+  const DEFAULT_EVENT_ID = "0x0000000000000000000000000000000000000000000000000000000000000045";
+  const CHAIN_ID_HEX = "0xaa36a7";
 
-      // ===== Connect =====
-      btnConnect.addEventListener('click', async ()=>{ try{ setLoading(btnConnect,true); if(!window.ethereum) throw new Error('MetaMask not found'); await ensureSepolia(); provider = new BrowserProvider(window.ethereum); await provider.send('eth_requestAccounts', []); signer = await provider.getSigner(); user = await signer.getAddress(); const net = await provider.getNetwork(); netInfo.textContent = `Sepolia (${net.chainId.toString()})`; acctInfo.textContent = `${user.slice(0,6)}…${user.slice(-4)}`; const code = await provider.getCode(KMS_ADDRESS); if(code==='0x') throw new Error('KMS contract not found'); await initSDK(); relayer = await createInstance({ ...SepoliaConfig, network: window.ethereum, relayerUrl: RELAYER_URL, debug:true }); contract = new Contract(CONTRACT_ADDRESS, abi, signer); setStatus('Connected. Ready to check.'); btnLast.disabled = false; refreshButtons(); clog.group('SETUP'); console.log('Ready'); clog.end(); }catch(e){ console.error(e); setStatus('❌ '+e.message); } finally{ setLoading(btnConnect,false); } });
+  const ABI = [
+    { inputs: [], name: "version", outputs: [{type:"string"}], stateMutability: "pure", type:"function" },
+    { inputs: [{type:"bytes32"},{type:"uint16"},{type:"bool"},{type:"uint16[]"}], name:"setPolicy", outputs:[], stateMutability:"nonpayable", type:"function" },
+    { inputs: [{type:"bytes32"}], name:"getPolicy", outputs:[{type:"bool"},{type:"uint16"},{type:"bool"},{type:"uint16[]"}], stateMutability:"view", type:"function" },
+    { inputs: [{type:"bytes32"},{type:"bytes32"},{type:"bytes32"},{type:"bytes32"},{type:"bytes"}], name:"register", outputs:[{type:"bytes32"}], stateMutability:"nonpayable", type:"function" },
+    { inputs: [{type:"bytes32"}], name:"getMyEligibilityHandle", outputs:[{type:"bytes32"}], stateMutability:"view", type:"function" },
+    { inputs: [{type:"bytes32"}], name:"makeMyEligibilityPublic", outputs:[], stateMutability:"nonpayable", type:"function" },
+    { inputs: [], name:"owner", outputs:[{type:"address"}], stateMutability:"view", type:"function" }
+  ];
 
-      // ===== Actions =====
-      btnCheck.addEventListener('click', async ()=>{ try{ if(!signer || !relayer) throw new Error('Connect wallet first'); const address = validateAddress(addrInput.value); setLoading(btnCheck,true); setStatus('Encrypting & sending…'); resultEl.style.display='none'; const { handle, proof } = await encryptAddress(address); const publicHandle = await callCheckPublic(modeSel.value, handle, proof); const ok = await decryptPublic(publicHandle); showResult(ok); setStatus('✅ Done'); }catch(e){ console.error(e); setStatus('❌ '+e.message); } finally{ setLoading(btnCheck,false); } });
+  const $ = s => document.querySelector(s);
+  const netBadge = $("#netBadge");
+  const addrBadge = $("#addrBadge");
+  const btnConnect = $("#btnConnect");
 
-      btnLast.addEventListener('click', async ()=>{ try{ if(!relayer) throw new Error('Relayer not ready'); if(!lastHandle) throw new Error('No handle cached yet'); setLoading(btnLast,true); setStatus('Decrypting last result…'); const ok = await decryptPublic(lastHandle); showResult(ok); setStatus('✅ Done'); }catch(e){ console.error(e); setStatus('❌ '+e.message); } finally{ setLoading(btnLast,false); } });
+  const age = $("#age");
+  const country = $("#country");
+  const invite = $("#invite");
+  const btnRegister = $("#btnRegister");
+  const regStatus = $("#regStatus");
+  const regLine = $("#regLine");
 
-      btnAddW.addEventListener('click', async ()=>{ try{ if(!contract) throw new Error('Connect first'); const address = validateAddress(adminHandle.value); setLoading(btnAddW,true); const { handle, proof } = await encryptAddress(address); clog.group('ADMIN addToWhitelist'); clog.table({ handle, proofLen: proof.length }); const tx = await contract.addToWhitelist(handle, proof, { gasLimit: 3_000_000 }); console.log('txHash', tx.hash); await tx.wait(); clog.end(); setStatus('✅ Added to whitelist (encrypted)'); }catch(e){ console.error(e); setStatus('❌ '+e.message); } finally{ setLoading(btnAddW,false); } });
+  const btnGetHandle = $("#btnGetHandle");
+  const btnPublicDecrypt = $("#btnPublicDecrypt");
+  const btnUserDecrypt = $("#btnUserDecrypt");
+  const myHandle = $("#myHandle");
+  const decStatus = $("#decStatus");
 
-      btnAddB.addEventListener('click', async ()=>{ try{ if(!contract) throw new Error('Connect first'); const address = validateAddress(adminHandle.value); setLoading(btnAddB,true); const { handle, proof } = await encryptAddress(address); clog.group('ADMIN addToBlacklist'); clog.table({ handle, proofLen: proof.length }); const tx = await contract.addToBlacklist(handle, proof, { gasLimit: 3_000_000 }); console.log('txHash', tx.hash); await tx.wait(); clog.end(); setStatus('✅ Added to blacklist (encrypted)'); }catch(e){ console.error(e); setStatus('❌ '+e.message); } finally{ setLoading(btnAddB,false); } });
+  const eventIdIn = $("#eventId");
+  const minAge = $("#minAge");
+  const requireInvite = $("#requireInvite");
+  const countries = $("#countries");
+  const btnSetPolicy = $("#btnSetPolicy");
+  const btnMakePublic = $("#btnMakePublic");
+  const polStatus = $("#polStatus");
 
-      refreshButtons();
-      if (window.ethereum?.on){ window.ethereum.on('chainChanged', ()=> window.location.reload()); window.ethereum.on('accountsChanged', ()=> window.location.reload()); }
-    </script>
-  </body>
+  const logBox = $("#log");
+
+  netBadge.textContent = "Network: Sepolia";
+  addrBadge.textContent = "Contract: " + short(CONTRACT_ADDRESS);
+
+  let provider, signer, user, contract, relayer;
+
+  function short(a){ return a ? a.slice(0,6)+"…"+a.slice(-4) : "—"; }
+
+  // SAFE logger: не падает, если блока логов нет
+  function log(...args){
+    console.log("[UI]", ...args);
+    if (!logBox) return;
+    const s = args.map(x => typeof x === "string" ? x : JSON.stringify(x)).join(" ");
+    const p = document.createElement("div");
+    p.textContent = s;
+    logBox.appendChild(p);
+    logBox.scrollTop = logBox.scrollHeight;
+  }
+
+  function setBar(el, pct){ if(el) el.style.width = `${Math.max(0, Math.min(100, pct))}%`; }
+
+  async function connect(){
+    if(!window.ethereum) throw new Error("Install MetaMask");
+    provider = new BrowserProvider(window.ethereum);
+    await provider.send("eth_requestAccounts", []);
+    const net = await provider.getNetwork();
+    if(net.chainId !== 11155111n){
+      await provider.send("wallet_switchEthereumChain", [{ chainId: CHAIN_ID_HEX }]);
+    }
+    signer = await provider.getSigner();
+    user = await signer.getAddress();
+    contract = new Contract(getAddress(CONTRACT_ADDRESS), ABI, signer);
+    btnConnect.textContent = short(user);
+    log("Connected:", user);
+
+    await initSDK();
+    relayer = await createInstance({ ...SepoliaConfig, relayerUrl: RELAYER_URL, network: window.ethereum, debug: true });
+    log("Relayer ready:", RELAYER_URL);
+
+    // owner() может отсутствовать — тихо игнорим
+    try{
+      const owner = await contract.owner();
+      log("Owner:", owner, owner && owner.toLowerCase()===user.toLowerCase() ? "(you)" : "");
+    }catch{}
+  }
+
+  btnConnect.addEventListener("click", ()=>connect().catch(e=>alert(e.message||e)));
+
+  // REGISTER (encrypted triple)
+  btnRegister.addEventListener("click", async ()=>{
+    try{
+      if(!relayer || !contract) await connect();
+
+      const a = BigInt(isFinite(+age.value)? +age.value : 0);
+      const c = BigInt(isFinite(+country.value)? +country.value : 0);
+      const i = BigInt(invite.value === "1" ? 1 : 0);
+      const evId = eventIdIn.value && /^0x[0-9a-fA-F]{64}$/.test(eventIdIn.value) ? eventIdIn.value : DEFAULT_EVENT_ID;
+
+      log("Encrypt triple:", {age: a.toString(), country: c.toString(), invite: i.toString()});
+      regStatus.textContent = "Encrypting…"; setBar(regLine, 25);
+
+      const buf = relayer.createEncryptedInput(CONTRACT_ADDRESS, user);
+      if (typeof buf.add16 === "function") { buf.add16(a); buf.add16(c); } else { buf.addUint16(a); buf.addUint16(c); }
+      if (typeof buf.add8  === "function") { buf.add8(i); }  else { buf.addUint8(i); }
+
+      const { handles, inputProof } = await buf.encrypt();
+      const [hAge, hCountry, hInvite] = handles;
+      log("handles:", handles);
+
+      setBar(regLine, 55);
+      await contract.register.staticCall(evId, hAge, hCountry, hInvite, inputProof);
+      setBar(regLine, 75);
+
+      const tx = await contract.register(evId, hAge, hCountry, hInvite, inputProof);
+      regStatus.textContent = "TX: " + tx.hash;
+      await tx.wait();
+      setBar(regLine, 100);
+      regStatus.textContent = "✓ Registered";
+    }catch(e){
+      log("ERR register:", e);
+      regStatus.textContent = "Error: " + (e.reason||e.message||String(e));
+      setBar(regLine, 0);
+    }
+  });
+
+  // HANDLE + DECRYPT
+  btnGetHandle.addEventListener("click", async ()=>{
+    try{
+      if(!contract) await connect();
+      const evId = eventIdIn.value && /^0x[0-9a-fA-F]{64}$/.test(eventIdIn.value) ? eventIdIn.value : DEFAULT_EVENT_ID;
+      const h = await contract.getMyEligibilityHandle(evId);
+      myHandle.textContent = String(h);
+      decStatus.textContent = "Handle ready";
+      log("handle:", h);
+    }catch(e){
+      decStatus.textContent = "Error: " + (e.reason||e.message||String(e));
+    }
+  });
+
+  btnPublicDecrypt.addEventListener("click", async ()=>{
+    try{
+      if(!relayer || !contract) await connect();
+      const evId = eventIdIn.value && /^0x[0-9a-fA-F]{64}$/.test(eventIdIn.value) ? eventIdIn.value : DEFAULT_EVENT_ID;
+      const h = await contract.getMyEligibilityHandle(evId);
+      const out = await relayer.publicDecrypt([h]);
+      const v = Array.isArray(out) ? out[0] : (out[h] ?? out[Object.keys(out).find(k=>k.toLowerCase()===String(h).toLowerCase())]);
+      const ok = (v===true || v==="true" || v===1 || v==="1");
+      decStatus.innerHTML = ok ? "✅ Eligible" : "⚠️ Not eligible";
+      log("publicDecrypt:", v);
+    }catch(e){
+      decStatus.textContent = "Error: " + (e.reason||e.message||String(e));
+    }
+  });
+
+  btnUserDecrypt.addEventListener("click", async ()=>{
+    try{
+      if(!relayer || !contract) await connect();
+      const evId = eventIdIn.value && /^0x[0-9a-fA-F]{64}$/.test(eventIdIn.value) ? eventIdIn.value : DEFAULT_EVENT_ID;
+      const h = await contract.getMyEligibilityHandle(evId);
+
+      const kp = await generateKeypair();
+      const startTs = Math.floor(Date.now()/1000).toString();
+      const days = "7";
+      const eip = relayer.createEIP712(kp.publicKey, [CONTRACT_ADDRESS], startTs, days);
+      const sig = await signer.signTypedData(
+        eip.domain,
+        { UserDecryptRequestVerification: eip.types.UserDecryptRequestVerification },
+        eip.message
+      );
+
+      const out = await relayer.userDecrypt(
+        [{ handle: h, contractAddress: CONTRACT_ADDRESS }],
+        kp.privateKey, kp.publicKey, sig.replace(/^0x/, ""),
+        [CONTRACT_ADDRESS], user, startTs, days
+      );
+      const v = out[h] ?? out[Object.keys(out).find(k=>k.toLowerCase()===String(h).toLowerCase())];
+      const ok = (v===true || v==="true" || v===1 || v==="1");
+      decStatus.innerHTML = ok ? "✅ Eligible" : "⚠️ Not eligible";
+      log("userDecrypt:", v);
+    }catch(e){
+      decStatus.textContent = "Error: " + (e.reason||e.message||String(e));
+    }
+  });
+
+  // OWNER
+  btnSetPolicy.addEventListener("click", async ()=>{
+    try{
+      if(!contract) await connect();
+      const evId = eventIdIn.value && /^0x[0-9a-fA-F]{64}$/.test(eventIdIn.value) ? eventIdIn.value : DEFAULT_EVENT_ID;
+      const min = parseInt(minAge.value || "0");
+      const req = requireInvite.value === "true";
+      const arr = (countries.value||"").split(",").map(s=>s.trim()).filter(Boolean).map(x=>parseInt(x,10));
+      log("setPolicy:", {eventId:evId, minAge:min, requireInvite:req, countries:arr});
+      const tx = await contract.setPolicy(evId, min, req, arr);
+      polStatus.textContent = "TX: " + tx.hash;
+      await tx.wait();
+      polStatus.textContent = "✓ Policy updated";
+    }catch(e){
+      polStatus.textContent = "Error: " + (e.reason||e.message||String(e));
+    }
+  });
+
+  btnMakePublic.addEventListener("click", async ()=>{
+    try{
+      if(!contract) await connect();
+      const evId = eventIdIn.value && /^0x[0-9a-fA-F]{64}$/.test(eventIdIn.value) ? eventIdIn.value : DEFAULT_EVENT_ID;
+      const tx = await contract.makeMyEligibilityPublic(evId);
+      polStatus.textContent = "TX: " + tx.hash;
+      await tx.wait();
+      polStatus.textContent = "✓ Marked public (your eligibility)";
+      log("made public for", short(user));
+    }catch(e){
+      polStatus.textContent = "Error: " + (e.reason||e.message||String(e));
+    }
+  });
+</script>
+</body>
 </html>
