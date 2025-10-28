@@ -1,121 +1,130 @@
-# Private Event Eligibility (FHEVM)
+# Secret Bonus Payout · Zama FHEVM
 
-Privacy‑preserving event registration on **Zama FHEVM**: users encrypt their age, country (ISO‑3166 numeric), and invite flag in a single shot. The smart contract stores **only encrypted eligibility** (a boolean handle) and per‑event policy. No raw personal data or individual plaintext values are kept on‑chain.
+Privacy-preserving bonus allocation on-chain. Employees submit **encrypted KPIs**; the contract returns an **encrypted bonus amount** that only the employee can decrypt via Zama’s Relayer SDK. Policy thresholds and bonus values are kept encrypted on-chain.
 
-> Frontend entry: `frontend/public/index.html`
-
----
-
-## ✨ What it does
-
-* **Private registration:** age, country, and invite flag are encrypted client‑side via Zama Relayer SDK. The contract receives the external ciphertext handles plus proof and evaluates eligibility entirely under FHE.
-* **Policy control:** the owner sets per‑event policy: min age, invite required (true/false), and an allow‑list of countries.
-* **Privacy by design:** the chain only holds encrypted eligibility handles. Clear‑text PII is never emitted or stored.
-* **Flexible decryption:**
-
-  * **Public decrypt** (optional): owner may mark specific values public (e.g., for audits/demos).
-  * **User decrypt**: authorized users can EIP‑712 sign a request for relayer‑assisted decrypt of their own handle.
+> **Network**: Sepolia
+> **Contract (deployed)**: `0x13274eA87Db740ca19f1d85B8c0c6aDf90a0a4EB`
+> **Frontend entry**: `frontend/public/bonus.html`
+> **Relayer SDK**: `@zama-fhe/relayer-sdk` v0.2.0
+> **Solidity**: `0.8.24` (recommended: `viaIR: true`, optimizer enabled)
 
 ---
 
-## 📦 Repository layout
+## Overview
 
+**Secret Bonus Payout** implements a private bonus workflow on Zama FHEVM:
+
+* **Owner** uploads a global **encrypted policy**: `minQuality (u8)`, `minVelocity (u8)`, `minImpact (u8)`, `bonusYes (u32)`, `bonusNo (u32)`.
+* **Employee** submits encrypted KPIs (`quality`, `velocity`, `impact`).
+* Contract computes: `cond = (q≥minQ) && (v≥minV) && (i≥minI)` → `bonus = cond ? bonusYes : bonusNo`.
+* Only the **employee (msg.sender)** gets decrypt rights to the encrypted `bonus` using **userDecrypt (EIP‑712)**.
+
+---
+
+## Core Features
+
+* 🔒 All sensitive values are encrypted (`euint8`, `euint32`) using official Zama Solidity library.
+* 🎯 Binary policy check with private result; no KPIs or thresholds are revealed.
+* 🔐 Access control via `FHE.allow` (employee-only decryption) and `FHE.allowThis` for reuse.
+* 🧪 Dev helpers: plain policy setter and public decrypt flags (for demos).
+
+---
+
+## Contract
+
+**File**: `contracts/SecretBonusPayout.sol`
+
+**Key storage**
+
+```solidity
+// thresholds
+ euint8  _minQuality;
+ euint8  _minVelocity;
+ euint8  _minImpact;
+// bonus amounts
+ euint32 _bonusYes;
+ euint32 _bonusNo;
+ bool    _policyExists;
 ```
-frontend/
-  public/
-    index.html        # Single‑file app (ethers v6 + Relayer SDK 0.2.x)
-contracts/
-  PrivateEventEligibility.sol
-scripts/
-  deploy.ts | deploy.js
-hardhat.config.ts | .js
-.env.example
-```
+
+**Main functions**
+
+* `setPolicyEncrypted(minQ, minV, minI, bonusYes, bonusNo, proof)` — owner sets **encrypted** policy using Relayer SDK handles + proof.
+* `setPolicyPlain(minQ, minV, minI, bonusYes, bonusNo)` — converts clear values to encrypted on-chain (dev only).
+* `makePolicyPublic()` — optional demo: mark policy ciphertexts publicly decryptable.
+* `getPolicyHandles()` — return `bytes32` handles for audits/UI.
+* `evaluateKPIs(quality, velocity, impact, proof)` — returns encrypted `u32` bonus; **only employee** can decrypt.
+
+**Events**
+
+* `PolicyUpdated(minQualityH, minVelocityH, minImpactH, bonusYesH, bonusNoH)`
+* `BonusComputed(employee, bonusHandle)`
+
+**Implementation notes**
+
+* Conditional selection uses `FHE.select(cond, _bonusYes, _bonusNo)` (no `cmux`).
+* Avoid FHE ops in view/pure. Expose only handles via `FHE.toBytes32`.
 
 ---
 
-## 🔐 Smart contract (overview)
+## Usage Guide
 
-**`PrivateEventEligibility.sol`**
+### Admin (Owner)
 
-* Stores per‑event policy:
+1. **Connect** wallet (Sepolia). The app will bootstrap Relayer.
+2. Enter thresholds and bonus values. Click **Set Encrypted Policy**.
+3. Optionally call **Make Policy Public** for demo/audit.
+4. Use **Policy handles** section for visibility/debug.
 
-  * `minAge` (uint16), `requireInvite` (bool), `allowCountries[]` (uint16 ISO numeric)
-* Accepts a single external encrypted input (age, country, invite) and computes **`eligible = (age >= minAge) && (country in allow) && (inviteOK)`**
-* Emits no PII, keeps only encrypted handles
-* Utility methods to expose encrypted handles for user/public decrypt
+### Employee
 
-> Compiled against Solidity 0.8.x with `@fhevm/solidity` library. See contract for exact API.
+1. **Connect** with your wallet.
+2. Enter your KPIs (Quality, Velocity, Impact).
+3. Click **Submit Encrypted KPIs**. The UI will:
 
----
-
-## 🖥️ Frontend (single file)
-
-* Pure HTML/JS app under `frontend/public/index.html`
-* Uses **ethers v6** and **Relayer SDK 0.2.x** from CDN
-* Minimal state management; robust network handling (recreates provider/contract on `chainChanged`/`accountsChanged`)
-* Buttons:
-
-  * **Submit Encrypted** – registers user
-  * **Set Policy** – owner‑only policy update
-  * **Make My Eligibility Public** – optional public decrypt
-  * **Get Handle / Public Decrypt / User Decrypt** – read & decrypt own eligibility
+   * Encrypt inputs (`createEncryptedInput → add8/add8/add8 → encrypt`).
+   * Send handles + `proof` to `evaluateKPIs`.
+   * Read `BonusComputed` event, pick `bonusHandle`.
+   * Request **userDecrypt** with EIP‑712 signature → display `$ bonus`.
 
 ---
 
-## 🚀 Quick start
+## Environment Variables
 
-### Prerequisites
-
-* Node 18+
-* MetaMask (Sepolia)
-* Sepolia ETH for gas
-
-### Install
+For Hardhat:
 
 ```bash
-npm i
+SEPOLIA_RPC=https://sepolia.infura.io/v3/<key>
+DEPLOYER_PK=0x<private_key>
+ETHERSCAN_API_KEY=<optional>
 ```
 
-### Environment
-
-Copy `.env.example` → `.env` and fill values (RPC, private key, relayer URL if different).
-
-### Compile & deploy (Hardhat)
+If you move to a bundled frontend (Vite/React), add:
 
 ```bash
-npx hardhat clean
-npx hardhat compile
-npx hardhat deploy --network sepolia
+VITE_RELAYER_URL=https://relayer.testnet.zama.cloud
+VITE_CONTRACT_ADDRESS=0x13274eA87Db740ca19f1d85B8c0c6aDf90a0a4EB
 ```
-
-Grab the deployed contract address and paste it into the **CONFIG** block inside `frontend/public/index.html`:
-
-```js
-window.CONFIG = {
-  NETWORK_NAME: 'Sepolia',
-  CHAIN_ID_HEX: '0xaa36a7',
-  CONTRACT_ADDRESS: '0x…',
-  RELAYER_URL: 'https://relayer.testnet.zama.cloud'
-};
-```
-
-### Serve the frontend
-
-Open `frontend/public/index.html` directly in the browser or host it with any static server (e.g. VSCode Live Server).
 
 ---
 
-## 🛠️ Development notes
+## Troubleshooting
 
-* **Relayer SDK**: initialized once after wallet connect; re‑initialized on network/account change.
-* **Ethers v6**: use `new BrowserProvider(window.ethereum, 'any')` to avoid cached chainId; always rebuild provider/contract on `chainChanged`.
-* **Network**: app enforces Sepolia (11155111). If the wallet is on another network, it prompts a switch and rebuilds connections.
+* **`Policy not set`** — call `setPolicyEncrypted` (or `setPolicyPlain` for dev) as **owner** first.
+* **WASM/Relayer errors** — ensure COOP/COEP meta tags are present and call `await initSDK()` before `createInstance(...)`.
+* **Decryption fails** — only the **employee (msg.sender)** can decrypt. Confirm your address and the EIP‑712 signature parameters (contract list includes this contract address).
+* **Compilation issues** — enable `viaIR: true` and optimizer; avoid adding FHE ops in view/pure.
 
 ---
 
+## Security
 
-## 📄 License
+* Do not log plaintext KPI/bonus data in the UI.
+* Keep `@zama-fhe/relayer-sdk` pinned to `0.2.0` for reproducibility.
+* Review and audit before production use.
+
+---
+
+## License
 
 MIT — see `LICENSE`.
-

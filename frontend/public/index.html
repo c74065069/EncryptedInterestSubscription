@@ -2,322 +2,406 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Private Event Eligibility · Zama FHEVM</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+  <!-- Required for Relayer WASM workers -->
+  <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin"/>
+  <meta http-equiv="Cross-Origin-Embedder-Policy" content="require-corp"/>
+
+  <title>Secret Bonus Payout · Zama FHEVM</title>
+
+  <!-- Fonts: bold, readable brutalist combo -->
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Spline+Sans+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+
   <style>
     :root{
-      --bg:#0f1117; --panel:#151a24; --ink:#e8eef8; --muted:#8aa0b2;
-      --line:#223049; --accent:#5eead4; --accent2:#60a5fa; --warn:#f59e0b; --good:#22c55e; --bad:#ef4444;
-      --chip:#0d1726; --br:16px; --shadow:0 10px 30px rgba(0,0,0,.35);
+      --bg:#fafafa; --ink:#0b0b0b; --muted:#5b5b5b; --line:#0b0b0b;
+      --accent:#0ea5a3; --accent2:#2563eb; --warn:#b45309; --ok:#166534; --err:#b91c1c;
+      --radius: 10px;
     }
     *{box-sizing:border-box}
-    html,body{margin:0;height:100%}
+    html,body{height:100%}
     body{
-      background:radial-gradient(1200px 800px at 20% -10%, rgba(96,165,250,.08), transparent),
-                 radial-gradient(1000px 700px at 110% 10%, rgba(94,234,212,.08), transparent),
-                 var(--bg);
-      color:var(--ink); font:16px/1.45 Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif
+      margin:0; background:var(--bg); color:var(--ink);
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
     }
-    .wrap{max-width:1120px;margin:26px auto;padding:0 16px}
-    header.top{display:flex;gap:14px;align-items:center;margin-bottom:18px;flex-wrap:wrap}
-    .logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:18px}
-    .logoMark{width:30px;height:30px;border-radius:10px;background:conic-gradient(from 180deg,#5eead4,#60a5fa,#5eead4)}
-    .badge{background:var(--chip); border:1px solid var(--line); color:var(--muted);
-           border-radius:999px; padding:8px 12px; font-size:12px}
-    .btn{appearance:none;border:0;cursor:pointer;border-radius:12px;padding:10px 14px;
-         color:#0b1220;background:linear-gradient(180deg,#7dd3fc,#60a5fa); font-weight:800}
-    .btn:disabled{opacity:.6;cursor:not-allowed}
-    .btn.alt{background:linear-gradient(180deg,#34d399,#22c55e)}
-    .btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
-    .grid{display:grid;grid-template-columns: 1.1fr .9fr; gap:18px}
-    @media (max-width:980px){ .grid{grid-template-columns:1fr} }
-    .card{background:linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01)), #151a24;
-          border:1px solid var(--line); border-radius:var(--br); box-shadow:var(--shadow); padding:18px}
-    h2{margin:0 0 10px 0; font-size:18px}
-    p.lead{margin:0 0 12px 0; color:var(--muted)}
-    label{display:block; color:var(--muted); font-weight:700; font-size:12px; letter-spacing:.6px; text-transform:uppercase; margin-bottom:8px}
-    input, select{width:100%; background:#0b1220; border:1px solid var(--line); color:var(--ink); border-radius:12px; padding:12px; outline:none}
-    input:focus, select:focus{border-color:#3b82f6; box-shadow:0 0 0 4px rgba(59,130,246,.15)}
-    .row{display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap}
-    .hint{color:var(--muted); font-size:12px}
-    .line{height:6px; border-radius:999px; background:#0b1220; border:1px solid var(--line); overflow:hidden}
-    .line>span{display:block; height:100%; width:0%; background:linear-gradient(90deg,#60a5fa,#5eead4)}
-    .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace}
-    .handles{font-size:12px; background:#0b1220; border:1px dashed var(--line); padding:10px; border-radius:10px; color:#c7d7e6; word-break:break-all}
-    .status{min-height:20px;color:var(--muted); font-size:13px}
-    .log{background:#0b1220; border:1px solid var(--line); border-radius:12px; padding:10px; height:180px; overflow:auto; font-size:12px}
-    .twocol{display:grid; grid-template-columns:1fr 1fr; gap:10px}
-    @media (max-width:640px){ .twocol{grid-template-columns:1fr} }
+    header{
+      border-bottom: 2px solid var(--line);
+      padding: 14px 16px; display:flex; align-items:center; justify-content:space-between; gap:12px;
+    }
+    .brand{display:flex; align-items:flex-end; gap:10px}
+    .logo{
+      width:42px; height:42px; border:2px solid var(--line); border-radius:6px; display:grid; place-items:center;
+      font-weight:800; letter-spacing:.5px;
+    }
+    h1{margin:0; font-size:18px; font-weight:800; letter-spacing:.2px}
+    .sub{font-size:12px; color:var(--muted); font-weight:600}
+    .chip{
+      border:2px solid var(--line); background:#fff; padding:8px 12px; border-radius: 999px; font-weight:800; cursor:pointer;
+    }
+    .chip:disabled{opacity:.6; cursor:not-allowed}
+    main{max-width:1180px; margin: 24px auto 80px; padding: 0 12px}
+    .banner{
+      border:2px solid var(--line); border-radius: var(--radius);
+      padding:12px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;
+      background:#fff;
+    }
+    .mono{ font-family: "Spline Sans Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .pill{ border:2px solid var(--line); padding:6px 10px; border-radius: 999px; font-weight:800; background:#fff }
+    .grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:16px }
+    @media (max-width: 980px){ .grid{ grid-template-columns:1fr; } }
+    .card{
+      border:2px solid var(--line); border-radius: var(--radius); background:#fff; padding:14px;
+    }
+    .card h2{ margin:0 0 8px; font-size:16px; font-weight:800 }
+    .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center }
+    label{ font-size:12px; font-weight:800; letter-spacing:.03em; text-transform:uppercase; color:#222 }
+    input{
+      width:100%; padding:12px 12px; border:2px solid var(--line); border-radius:8px; background:#fff; color:#111; font-weight:800;
+      outline:none;
+    }
+    input:focus{ box-shadow: 4px 4px 0 #000; }
+    .two{ display:grid; grid-template-columns:1fr 1fr; gap:10px }
+    .btn{
+      border:2px solid var(--line); background:#fff; padding:12px 14px; border-radius:8px; font-weight:800; cursor:pointer;
+    }
+    .btn:disabled{opacity:.6; cursor:not-allowed}
+    .btn.primary{ background:#e6fffb; border-color:#000; }
+    .btn.alt{ background:#eef2ff; }
+    .btn.warn{ background:#fff7ed; }
+    .status{
+      border:2px dashed var(--line); border-radius:8px; padding:10px; font:600 12px Inter; color:#222; background:#fff; word-break:break-all;
+      margin-top:10px;
+    }
+    .status.ok{ border-style:solid; color:#0f5132; background:#d1fae5 }
+    .status.err{ border-style:solid; color:#7f1d1d; background:#fee2e2 }
+    .big{
+      font-size:22px; font-weight:800; letter-spacing:-.02em; border:2px solid var(--line); padding:10px 12px; border-radius:10px; background:#fff;
+    }
   </style>
 </head>
 <body>
-<main class="wrap">
-  <header class="top">
-    <div class="logo">
-      <div class="logoMark"></div>
-      <div>
-        <div>Private Event Eligibility</div>
-        <div class="hint">Zama FHEVM · Encrypted checks only</div>
-      </div>
+<header>
+  <div class="brand">
+    <div class="logo">FHE</div>
+    <div>
+      <h1>Secret Bonus Payout</h1>
+      <div class="sub">Encrypted KPIs → Encrypted bonus (only the employee can decrypt)</div>
     </div>
-    <span id="netBadge" class="badge">Network: —</span>
-    <span id="addrBadge" class="badge">Contract: —</span>
-    <button id="btnConnect" class="btn" style="margin-left:auto">Connect Wallet</button>
-  </header>
+  </div>
+  <div class="row">
+    <span id="netTag" class="pill mono">Network: —</span>
+    <button id="btnConnect" class="chip">Connect Wallet</button>
+  </div>
+</header>
 
-  <section class="grid">
-    <article class="card">
-      <h2>Register Privately</h2>
-      <p class="lead">Age, country (ISO-3166 numeric), and invite flag are encrypted in one shot; the contract stores only your encrypted eligibility.</p>
-
-      <div class="twocol">
-        <div>
-          <label>Age (years)</label>
-          <input id="age" type="number" min="0" placeholder="e.g. 25">
-        </div>
-        <div>
-          <label>Country (ISO numeric)</label>
-          <input id="country" type="number" min="0" placeholder="e.g. 840 = US">
-        </div>
-      </div>
-      <div class="row" style="margin-top:10px">
-        <div style="flex:1">
-          <label>Invite Flag</label>
-          <select id="invite">
-            <option value="1">1 — I have an invitation</option>
-            <option value="0">0 — No invitation</option>
-          </select>
-        </div>
-        <button id="btnRegister" class="btn alt">Submit Encrypted</button>
-      </div>
-      <div class="status" id="regStatus">—</div>
-      <div class="line"><span id="regLine"></span></div>
-
-      <div style="margin-top:14px">
-        <label>My Eligibility Handle</label>
-        <div class="row">
-          <button id="btnGetHandle" class="btn ghost">Get Handle</button>
-          <button id="btnPublicDecrypt" class="btn ghost">Public Decrypt</button>
-          <button id="btnUserDecrypt" class="btn ghost">User Decrypt</button>
-        </div>
-        <div class="handles mono" id="myHandle">—</div>
-        <div class="status" id="decStatus"></div>
-      </div>
-    </article>
-
-    <article class="card">
-      <h2>Owner · Policy</h2>
-      <p class="lead">Set age threshold, whether an invite is required, and an allowlist of countries.</p>
-
-      <div class="twocol">
-        <div>
-          <label>Event ID (bytes32 hex)</label>
-          <input id="eventId" placeholder="0x... (leave empty to use default)">
-        </div>
-        <div>
-          <label>Min Age</label>
-          <input id="minAge" type="number" min="0" placeholder="e.g. 21">
-        </div>
-      </div>
-
-      <div class="twocol" style="margin-top:10px">
-        <div>
-          <label>Require Invite</label>
-          <select id="requireInvite">
-            <option value="true">true</option>
-            <option value="false">false</option>
-          </select>
-        </div>
-        <div>
-          <label>Allow Countries (comma)</label>
-          <input id="countries" placeholder="e.g. 840,124,380">
-        </div>
-      </div>
-
-      <div class="row" style="margin-top:10px">
-        <button id="btnSetPolicy" class="btn">Set Policy</button>
-        <button id="btnMakePublic" class="btn ghost">Make My Eligibility Public</button>
-      </div>
-      <div class="status" id="polStatus">—</div>
-
-      
-    </article>
+<main>
+  <section class="banner">
+    <span class="pill mono">Contract</span>
+    <span id="addr" class="pill mono">0x13274eA87Db740ca19f1d85B8c0c6aDf90a0a4EB</span>
+    <span class="pill mono">Relayer SDK 0.2.0</span>
+    <span class="pill mono">Ethers v6</span>
   </section>
 
-  <footer style="margin:18px 0; color:#8aa0b2; text-align:center">
-    Relayer SDK 0.2.0 · Ethers v6 · Sepolia
-  </footer>
+  <section class="grid">
+    <!-- Employee panel -->
+    <article class="card">
+      <h2>Employee · Request Private Bonus</h2>
+      <div class="two">
+        <div>
+          <label>Quality (0..255)</label>
+          <input id="q" type="number" min="0" max="255" placeholder="e.g. 90"/>
+        </div>
+        <div>
+          <label>Velocity (0..255)</label>
+          <input id="v" type="number" min="0" max="255" placeholder="e.g. 85"/>
+        </div>
+      </div>
+      <div style="margin-top:10px">
+        <label>Impact (0..255)</label>
+        <input id="i" type="number" min="0" max="255" placeholder="e.g. 80"/>
+      </div>
+
+      <div class="row" style="margin-top:12px">
+        <button id="btnEval" class="btn primary">Submit Encrypted KPIs</button>
+        <span id="empTx" class="pill mono">—</span>
+      </div>
+      <div id="empLog" class="status">—</div>
+      <div style="margin-top:10px" class="row">
+        <span class="big mono" id="bonusOut">$ —</span>
+      </div>
+    </article>
+
+    <!-- Admin panel -->
+    <article class="card">
+      <h2>Admin · Encrypted Policy</h2>
+      <div class="two">
+        <div>
+          <label>minQuality (u8)</label>
+          <input id="minQ" type="number" min="0" max="255" placeholder="e.g. 80"/>
+        </div>
+        <div>
+          <label>minVelocity (u8)</label>
+          <input id="minV" type="number" min="0" max="255" placeholder="e.g. 80"/>
+        </div>
+      </div>
+      <div class="two" style="margin-top:10px">
+        <div>
+          <label>minImpact (u8)</label>
+          <input id="minI" type="number" min="0" max="255" placeholder="e.g. 75"/>
+        </div>
+        <div>
+          <label>bonusYes (u32)</label>
+          <input id="bYes" type="number" min="0" max="4294967295" placeholder="e.g. 5000"/>
+        </div>
+      </div>
+      <div style="margin-top:10px">
+        <label>bonusNo (u32)</label>
+        <input id="bNo" type="number" min="0" max="4294967295" placeholder="e.g. 500"/>
+      </div>
+
+      <div class="row" style="margin-top:12px">
+        <button id="btnSetEnc" class="btn primary">Set Encrypted Policy</button>
+        <button id="btnSetPlain" class="btn alt">Set Plain (dev)</button>
+        <button id="btnPublic" class="btn warn">Make Policy Public</button>
+      </div>
+      <div id="admLog" class="status">—</div>
+
+      <div style="margin-top:10px">
+        <label>Policy handles</label>
+        <div id="handles" class="status mono" style="white-space:pre-wrap">—</div>
+      </div>
+    </article>
+  </section>
 </main>
 
+<!-- SDKs (ESM) -->
 <script type="module" crossorigin src="https://cdn.zama.ai/relayer-sdk-js/0.2.0/relayer-sdk-js.js"></script>
-<script type="module" crossorigin src="https://cdn.jsdelivr.net/npm/ethers@6.15.0/+esm"></script>
+<script type="module" crossorigin src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/+esm"></script>
 
 <script type="module">
-  import { BrowserProvider, Contract, getAddress } from "https://cdn.jsdelivr.net/npm/ethers@6.15.0/+esm";
+  import { BrowserProvider, Contract } from "https://cdn.jsdelivr.net/npm/ethers@6.13.4/+esm";
   import { initSDK, createInstance, SepoliaConfig, generateKeypair } from "https://cdn.zama.ai/relayer-sdk-js/0.2.0/relayer-sdk-js.js";
 
-  const CONTRACT_ADDRESS = "0x6eF4EB5101C4D442414f07C51E8C978eF997B2A5";
+  // ===== Config =====
+  const CONTRACT_ADDRESS = "0x13274eA87Db740ca19f1d85B8c0c6aDf90a0a4EB";
   const RELAYER_URL = "https://relayer.testnet.zama.cloud";
-  const DEFAULT_EVENT_ID = "0x0000000000000000000000000000000000000000000000000000000000000045";
-  const CHAIN_ID_HEX = "0xaa36a7";
+  const CHAIN_ID_HEX = "0xaa36a7"; // Sepolia
 
-  const ABI = [
-    { inputs: [], name: "version", outputs: [{type:"string"}], stateMutability: "pure", type:"function" },
-    { inputs: [{type:"bytes32"},{type:"uint16"},{type:"bool"},{type:"uint16[]"}], name:"setPolicy", outputs:[], stateMutability:"nonpayable", type:"function" },
-    { inputs: [{type:"bytes32"}], name:"getPolicy", outputs:[{type:"bool"},{type:"uint16"},{type:"bool"},{type:"uint16[]"}], stateMutability:"view", type:"function" },
-    { inputs: [{type:"bytes32"},{type:"bytes32"},{type:"bytes32"},{type:"bytes32"},{type:"bytes"}], name:"register", outputs:[{type:"bytes32"}], stateMutability:"nonpayable", type:"function" },
-    { inputs: [{type:"bytes32"}], name:"getMyEligibilityHandle", outputs:[{type:"bytes32"}], stateMutability:"view", type:"function" },
-    { inputs: [{type:"bytes32"}], name:"makeMyEligibilityPublic", outputs:[], stateMutability:"nonpayable", type:"function" },
-    { inputs: [], name:"owner", outputs:[{type:"address"}], stateMutability:"view", type:"function" }
+  // ABI subset — SecretBonusPayout
+  const abi = [
+    { type:"function", name:"version", inputs:[], outputs:[{type:"string"}], stateMutability:"pure" },
+
+    { type:"function", name:"setPolicyEncrypted", inputs:[
+      {type:"bytes32"}, {type:"bytes32"}, {type:"bytes32"}, {type:"bytes32"}, {type:"bytes32"}, {type:"bytes"}
+    ], outputs:[], stateMutability:"nonpayable" },
+
+    { type:"function", name:"setPolicyPlain", inputs:[
+      {type:"uint8"},{type:"uint8"},{type:"uint8"},{type:"uint32"},{type:"uint32"}
+    ], outputs:[], stateMutability:"nonpayable" },
+
+    { type:"function", name:"getPolicyHandles", inputs:[], outputs:[
+      {type:"bytes32"},{type:"bytes32"},{type:"bytes32"},{type:"bytes32"},{type:"bytes32"},{type:"bool"}
+    ], stateMutability:"view" },
+
+    { type:"function", name:"makePolicyPublic", inputs:[], outputs:[], stateMutability:"nonpayable" },
+
+    { type:"function", name:"evaluateKPIs", inputs:[
+      {type:"bytes32"}, {type:"bytes32"}, {type:"bytes32"}, {type:"bytes"}
+    ], outputs:[{type:"bytes32"}], stateMutability:"nonpayable" },
+
+    { type:"event", name:"PolicyUpdated", inputs:[
+      {indexed:false, name:"minQualityH", type:"bytes32"},
+      {indexed:false, name:"minVelocityH", type:"bytes32"},
+      {indexed:false, name:"minImpactH", type:"bytes32"},
+      {indexed:false, name:"bonusYesH", type:"bytes32"},
+      {indexed:false, name:"bonusNoH", type:"bytes32"}
+    ]},
+    { type:"event", name:"BonusComputed", inputs:[
+      {indexed:true, name:"employee", type:"address"},
+      {indexed:false, name:"bonusHandle", type:"bytes32"}
+    ]},
   ];
 
-  const $ = s => document.querySelector(s);
-  const netBadge = $("#netBadge");
-  const addrBadge = $("#addrBadge");
-  const btnConnect = $("#btnConnect");
+  // ===== Elements =====
+  const $ = (id)=>document.getElementById(id);
+  const els = {
+    netTag: $("netTag"), btnConnect: $("btnConnect"), addr: $("addr"),
+    // employee
+    q: $("q"), v: $("v"), i: $("i"), btnEval: $("btnEval"), empLog: $("empLog"), empTx: $("empTx"), bonusOut: $("bonusOut"),
+    // admin
+    minQ: $("minQ"), minV: $("minV"), minI: $("minI"), bYes: $("bYes"), bNo: $("bNo"),
+    btnSetEnc: $("btnSetEnc"), btnSetPlain: $("btnSetPlain"), btnPublic: $("btnPublic"),
+    admLog: $("admLog"), handles: $("handles"),
+  };
+  els.addr.textContent = CONTRACT_ADDRESS;
 
-  const age = $("#age");
-  const country = $("#country");
-  const invite = $("#invite");
-  const btnRegister = $("#btnRegister");
-  const regStatus = $("#regStatus");
-  const regLine = $("#regLine");
-
-  const btnGetHandle = $("#btnGetHandle");
-  const btnPublicDecrypt = $("#btnPublicDecrypt");
-  const btnUserDecrypt = $("#btnUserDecrypt");
-  const myHandle = $("#myHandle");
-  const decStatus = $("#decStatus");
-
-  const eventIdIn = $("#eventId");
-  const minAge = $("#minAge");
-  const requireInvite = $("#requireInvite");
-  const countries = $("#countries");
-  const btnSetPolicy = $("#btnSetPolicy");
-  const btnMakePublic = $("#btnMakePublic");
-  const polStatus = $("#polStatus");
-
-  const logBox = $("#log");
-
-  netBadge.textContent = "Network: Sepolia";
-  addrBadge.textContent = "Contract: " + short(CONTRACT_ADDRESS);
-
+  // ===== State =====
   let provider, signer, user, contract, relayer;
 
-  function short(a){ return a ? a.slice(0,6)+"…"+a.slice(-4) : "—"; }
+  // ===== Helpers =====
+  const info = (el, t)=>{ el.className="status"; el.textContent=t; };
+  const ok   = (el, t)=>{ el.className="status ok"; el.textContent=t; };
+  const err  = (el, t)=>{ el.className="status err"; el.textContent=t; };
+  const isU8  = (n)=>Number.isInteger(n) && n>=0 && n<=255;
+  const isU32 = (n)=>Number.isInteger(n) && n>=0 && n<=4294967295;
+  const short = (a)=>a ? a.slice(0,6)+"…"+a.slice(-4) : "—";
 
-  // SAFE logger: не падает, если блока логов нет
-  function log(...args){
-    console.log("[UI]", ...args);
-    if (!logBox) return;
-    const s = args.map(x => typeof x === "string" ? x : JSON.stringify(x)).join(" ");
-    const p = document.createElement("div");
-    p.textContent = s;
-    logBox.appendChild(p);
-    logBox.scrollTop = logBox.scrollHeight;
-  }
-
-  function setBar(el, pct){ if(el) el.style.width = `${Math.max(0, Math.min(100, pct))}%`; }
-
-  async function connect(){
-    if(!window.ethereum) throw new Error("Install MetaMask");
-    provider = new BrowserProvider(window.ethereum);
-    await provider.send("eth_requestAccounts", []);
-    const net = await provider.getNetwork();
-    if(net.chainId !== 11155111n){
-      await provider.send("wallet_switchEthereumChain", [{ chainId: CHAIN_ID_HEX }]);
-    }
-    signer = await provider.getSigner();
-    user = await signer.getAddress();
-    contract = new Contract(getAddress(CONTRACT_ADDRESS), ABI, signer);
-    btnConnect.textContent = short(user);
-    log("Connected:", user);
-
-    await initSDK();
-    relayer = await createInstance({ ...SepoliaConfig, relayerUrl: RELAYER_URL, network: window.ethereum, debug: true });
-    log("Relayer ready:", RELAYER_URL);
-
-    // owner() может отсутствовать — тихо игнорим
+  // ===== Connect =====
+  els.btnConnect.onclick = async ()=>{
     try{
-      const owner = await contract.owner();
-      log("Owner:", owner, owner && owner.toLowerCase()===user.toLowerCase() ? "(you)" : "");
-    }catch{}
-  }
+      if(!window.ethereum) throw new Error("MetaMask not found");
+      provider = new BrowserProvider(window.ethereum);
+      await provider.send("eth_requestAccounts", []);
+      const net = await provider.getNetwork();
+      els.netTag.textContent = net.chainId===11155111n ? "Network: Sepolia" : `Network: ${String(net.chainId)}`;
+      if(net.chainId !== 11155111n){
+        await provider.send("wallet_switchEthereumChain", [{ chainId: CHAIN_ID_HEX }]);
+      }
+      signer = await provider.getSigner();
+      user = await signer.getAddress();
+      contract = new Contract(CONTRACT_ADDRESS, abi, signer);
+      els.btnConnect.textContent = short(user);
 
-  btnConnect.addEventListener("click", ()=>connect().catch(e=>alert(e.message||e)));
+      info(els.admLog, "Bootstrapping Relayer…");
+      await initSDK();
+      relayer = await createInstance({ ...SepoliaConfig, relayerUrl: RELAYER_URL, network: window.ethereum, debug: true });
+      ok(els.admLog, "Relayer ready ✓");
 
-  // REGISTER (encrypted triple)
-  btnRegister.addEventListener("click", async ()=>{
+      // Try to read policy handles
+      try{
+        const h = await contract.getPolicyHandles();
+        els.handles.textContent =
+`minQ: ${h[0]}
+minV: ${h[1]}
+minI: ${h[2]}
+bonusYes: ${h[3]}
+bonusNo : ${h[4]}
+exists : ${h[5]}`;
+      }catch{}
+    }catch(e){ err(els.admLog, e.message || String(e)); }
+  };
+
+  // ===== Admin: set encrypted policy =====
+  els.btnSetEnc.onclick = async ()=>{
     try{
-      if(!relayer || !contract) await connect();
+      if(!relayer || !contract) await els.btnConnect.onclick();
 
-      const a = BigInt(isFinite(+age.value)? +age.value : 0);
-      const c = BigInt(isFinite(+country.value)? +country.value : 0);
-      const i = BigInt(invite.value === "1" ? 1 : 0);
-      const evId = eventIdIn.value && /^0x[0-9a-fA-F]{64}$/.test(eventIdIn.value) ? eventIdIn.value : DEFAULT_EVENT_ID;
+      const minQ = Number(els.minQ.value || 0);
+      const minV = Number(els.minV.value || 0);
+      const minI = Number(els.minI.value || 0);
+      const bYes = Number(els.bYes.value || 0);
+      const bNo  = Number(els.bNo.value  || 0);
 
-      log("Encrypt triple:", {age: a.toString(), country: c.toString(), invite: i.toString()});
-      regStatus.textContent = "Encrypting…"; setBar(regLine, 25);
+      if(!isU8(minQ) || !isU8(minV) || !isU8(minI) || !isU32(bYes) || !isU32(bNo)) throw new Error("Out of range");
+
+      info(els.admLog, "Encrypting policy…");
+      const buf = relayer.createEncryptedInput(CONTRACT_ADDRESS, user);
+      buf.add8(minQ);
+      buf.add8(minV);
+      buf.add8(minI);
+      buf.add32(bYes);
+      buf.add32(bNo);
+      const { handles, inputProof } = await buf.encrypt();
+
+      // staticCall (may fail on some RPCs; ok to fall through)
+      try{ await contract.setPolicyEncrypted.staticCall(handles[0], handles[1], handles[2], handles[3], handles[4], inputProof); }catch{}
+
+      const tx = await contract.setPolicyEncrypted(handles[0], handles[1], handles[2], handles[3], handles[4], inputProof);
+      info(els.admLog, `TX: ${tx.hash}`);
+      await tx.wait();
+      ok(els.admLog, "Encrypted policy set ✓");
+
+      const h = await contract.getPolicyHandles();
+      els.handles.textContent =
+`minQ: ${h[0]}
+minV: ${h[1]}
+minI: ${h[2]}
+bonusYes: ${h[3]}
+bonusNo : ${h[4]}
+exists : ${h[5]}`;
+
+    }catch(e){ err(els.admLog, e.message || String(e)); }
+  };
+
+  // ===== Admin: set plain policy (dev) =====
+  els.btnSetPlain.onclick = async ()=>{
+    try{
+      if(!contract) await els.btnConnect.onclick();
+      const minQ = Number(els.minQ.value || 0);
+      const minV = Number(els.minV.value || 0);
+      const minI = Number(els.minI.value || 0);
+      const bYes = Number(els.bYes.value || 0);
+      const bNo  = Number(els.bNo.value  || 0);
+      if(!isU8(minQ) || !isU8(minV) || !isU8(minI) || !isU32(bYes) || !isU32(bNo)) throw new Error("Out of range");
+
+      const tx = await contract.setPolicyPlain(minQ, minV, minI, bYes, bNo);
+      info(els.admLog, `TX: ${tx.hash}`);
+      await tx.wait();
+      ok(els.admLog, "Plain policy set ✓");
+
+      const h = await contract.getPolicyHandles();
+      els.handles.textContent =
+`minQ: ${h[0]}
+minV: ${h[1]}
+minI: ${h[2]}
+bonusYes: ${h[3]}
+bonusNo : ${h[4]}
+exists : ${h[5]}`;
+
+    }catch(e){ err(els.admLog, e.message || String(e)); }
+  };
+
+  // ===== Admin: make policy public (demo)
+  els.btnPublic.onclick = async ()=>{
+    try{
+      if(!contract) await els.btnConnect.onclick();
+      const tx = await contract.makePolicyPublic();
+      info(els.admLog, `TX: ${tx.hash}`);
+      await tx.wait();
+      ok(els.admLog, "Policy marked public ✓");
+    }catch(e){ err(els.admLog, e.message || String(e)); }
+  };
+
+  // ===== Employee: evaluate KPIs =====
+  els.btnEval.onclick = async ()=>{
+    try{
+      if(!relayer || !contract) await els.btnConnect.onclick();
+
+      const q = Number(els.q.value || 0);
+      const v = Number(els.v.value || 0);
+      const i = Number(els.i.value || 0);
+      if(!isU8(q) || !isU8(v) || !isU8(i)) throw new Error("Inputs out of range");
+
+      info(els.empLog, "Encrypting KPIs…");
+      els.bonusOut.textContent = "$ —";
 
       const buf = relayer.createEncryptedInput(CONTRACT_ADDRESS, user);
-      if (typeof buf.add16 === "function") { buf.add16(a); buf.add16(c); } else { buf.addUint16(a); buf.addUint16(c); }
-      if (typeof buf.add8  === "function") { buf.add8(i); }  else { buf.addUint8(i); }
-
+      buf.add8(q);
+      buf.add8(v);
+      buf.add8(i);
       const { handles, inputProof } = await buf.encrypt();
-      const [hAge, hCountry, hInvite] = handles;
-      log("handles:", handles);
 
-      setBar(regLine, 55);
-      await contract.register.staticCall(evId, hAge, hCountry, hInvite, inputProof);
-      setBar(regLine, 75);
+      try{ await contract.evaluateKPIs.staticCall(handles[0], handles[1], handles[2], inputProof); }catch{}
 
-      const tx = await contract.register(evId, hAge, hCountry, hInvite, inputProof);
-      regStatus.textContent = "TX: " + tx.hash;
-      await tx.wait();
-      setBar(regLine, 100);
-      regStatus.textContent = "✓ Registered";
-    }catch(e){
-      log("ERR register:", e);
-      regStatus.textContent = "Error: " + (e.reason||e.message||String(e));
-      setBar(regLine, 0);
-    }
-  });
+      const tx = await contract.evaluateKPIs(handles[0], handles[1], handles[2], inputProof);
+      els.empTx.textContent = tx.hash;
+      info(els.empLog, "Waiting for receipt…");
+      const rcpt = await tx.wait();
 
-  // HANDLE + DECRYPT
-  btnGetHandle.addEventListener("click", async ()=>{
-    try{
-      if(!contract) await connect();
-      const evId = eventIdIn.value && /^0x[0-9a-fA-F]{64}$/.test(eventIdIn.value) ? eventIdIn.value : DEFAULT_EVENT_ID;
-      const h = await contract.getMyEligibilityHandle(evId);
-      myHandle.textContent = String(h);
-      decStatus.textContent = "Handle ready";
-      log("handle:", h);
-    }catch(e){
-      decStatus.textContent = "Error: " + (e.reason||e.message||String(e));
-    }
-  });
+      // Parse BonusComputed(employee, bonusHandle)
+      const iface = new Contract(CONTRACT_ADDRESS, abi, signer).interface;
+      const topic = iface.getEvent("BonusComputed").topicHash;
+      const log = rcpt.logs.find(l => l.topics?.[0] === topic);
+      if(!log){ throw new Error("Event not found"); }
+      const parsed = iface.parseLog(log);
+      const handle = parsed.args.bonusHandle;
 
-  btnPublicDecrypt.addEventListener("click", async ()=>{
-    try{
-      if(!relayer || !contract) await connect();
-      const evId = eventIdIn.value && /^0x[0-9a-fA-F]{64}$/.test(eventIdIn.value) ? eventIdIn.value : DEFAULT_EVENT_ID;
-      const h = await contract.getMyEligibilityHandle(evId);
-      const out = await relayer.publicDecrypt([h]);
-      const v = Array.isArray(out) ? out[0] : (out[h] ?? out[Object.keys(out).find(k=>k.toLowerCase()===String(h).toLowerCase())]);
-      const ok = (v===true || v==="true" || v===1 || v==="1");
-      decStatus.innerHTML = ok ? "✅ Eligible" : "⚠️ Not eligible";
-      log("publicDecrypt:", v);
-    }catch(e){
-      decStatus.textContent = "Error: " + (e.reason||e.message||String(e));
-    }
-  });
+      info(els.empLog, "Decrypting bonus…");
 
-  btnUserDecrypt.addEventListener("click", async ()=>{
-    try{
-      if(!relayer || !contract) await connect();
-      const evId = eventIdIn.value && /^0x[0-9a-fA-F]{64}$/.test(eventIdIn.value) ? eventIdIn.value : DEFAULT_EVENT_ID;
-      const h = await contract.getMyEligibilityHandle(evId);
-
+      // EIP-712 userDecrypt (employee only)
       const kp = await generateKeypair();
       const startTs = Math.floor(Date.now()/1000).toString();
       const days = "7";
@@ -328,51 +412,38 @@
         eip.message
       );
 
-      const out = await relayer.userDecrypt(
-        [{ handle: h, contractAddress: CONTRACT_ADDRESS }],
-        kp.privateKey, kp.publicKey, sig.replace(/^0x/, ""),
-        [CONTRACT_ADDRESS], user, startTs, days
-      );
-      const v = out[h] ?? out[Object.keys(out).find(k=>k.toLowerCase()===String(h).toLowerCase())];
-      const ok = (v===true || v==="true" || v===1 || v==="1");
-      decStatus.innerHTML = ok ? "✅ Eligible" : "⚠️ Not eligible";
-      log("userDecrypt:", v);
-    }catch(e){
-      decStatus.textContent = "Error: " + (e.reason||e.message||String(e));
-    }
-  });
+      const pairs = [{ handle, contractAddress: CONTRACT_ADDRESS }];
+      const out = await relayer.userDecrypt(pairs, kp.privateKey, kp.publicKey, sig.replace("0x",""),
+                                            [CONTRACT_ADDRESS], user, startTs, days);
 
-  // OWNER
-  btnSetPolicy.addEventListener("click", async ()=>{
-    try{
-      if(!contract) await connect();
-      const evId = eventIdIn.value && /^0x[0-9a-fA-F]{64}$/.test(eventIdIn.value) ? eventIdIn.value : DEFAULT_EVENT_ID;
-      const min = parseInt(minAge.value || "0");
-      const req = requireInvite.value === "true";
-      const arr = (countries.value||"").split(",").map(s=>s.trim()).filter(Boolean).map(x=>parseInt(x,10));
-      log("setPolicy:", {eventId:evId, minAge:min, requireInvite:req, countries:arr});
-      const tx = await contract.setPolicy(evId, min, req, arr);
-      polStatus.textContent = "TX: " + tx.hash;
-      await tx.wait();
-      polStatus.textContent = "✓ Policy updated";
-    }catch(e){
-      polStatus.textContent = "Error: " + (e.reason||e.message||String(e));
-    }
-  });
+      let val = out[handle];
+      if(val === undefined){
+        const k = Object.keys(out).find(k => k.toLowerCase() === handle.toLowerCase());
+        val = k ? out[k] : undefined;
+      }
+      if(val === undefined) throw new Error("Decryption failed");
 
-  btnMakePublic.addEventListener("click", async ()=>{
+      // val is u32 (string/number/bigint). Normalize:
+      const num = Number(val);
+      if(Number.isFinite(num)){
+        els.bonusOut.textContent = `$ ${num.toLocaleString()}`;
+        ok(els.empLog, "Bonus decrypted ✓");
+      }else{
+        els.bonusOut.textContent = `$ ${String(val)}`;
+        ok(els.empLog, "Bonus decrypted ✓ (non-numeric)");
+      }
+    }catch(e){ err(els.empLog, e.message || String(e)); }
+  };
+
+  // Network badge on load if wallet present
+  (async ()=>{
     try{
-      if(!contract) await connect();
-      const evId = eventIdIn.value && /^0x[0-9a-fA-F]{64}$/.test(eventIdIn.value) ? eventIdIn.value : DEFAULT_EVENT_ID;
-      const tx = await contract.makeMyEligibilityPublic(evId);
-      polStatus.textContent = "TX: " + tx.hash;
-      await tx.wait();
-      polStatus.textContent = "✓ Marked public (your eligibility)";
-      log("made public for", short(user));
-    }catch(e){
-      polStatus.textContent = "Error: " + (e.reason||e.message||String(e));
-    }
-  });
+      if(window.ethereum){
+        const net = await (new BrowserProvider(window.ethereum)).getNetwork();
+        els.netTag.textContent = net.chainId===11155111n ? "Network: Sepolia" : `Network: ${String(net.chainId)}`;
+      }
+    }catch{}
+  })();
 </script>
 </body>
 </html>
