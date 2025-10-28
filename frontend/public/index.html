@@ -2,84 +2,82 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
 
   <!-- Required for Relayer WASM workers -->
   <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin"/>
   <meta http-equiv="Cross-Origin-Embedder-Policy" content="require-corp"/>
 
-  <title>Secret Bonus Payout · Zama FHEVM</title>
+  <title>Private Gas Cap · Zama FHEVM</title>
 
-  <!-- Fonts: bold, readable brutalist combo -->
+  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Spline+Sans+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet"/>
 
   <style>
     :root{
-      --bg:#fafafa; --ink:#0b0b0b; --muted:#5b5b5b; --line:#0b0b0b;
-      --accent:#0ea5a3; --accent2:#2563eb; --warn:#b45309; --ok:#166534; --err:#b91c1c;
-      --radius: 10px;
+      --bg:#0b1017; --ink:#e5eefc; --muted:#92a5c7; --line:#1f2a3e;
+      --panel:#0f1521; --panel2:#0c1322; --accent:#7cc9ff; --accent2:#8a7cff; --ok:#3bd7a7; --err:#ff7c98;
+      --radius:16px; --shadow:0 18px 50px rgba(0,0,0,.35);
     }
     *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      margin:0; background:var(--bg); color:var(--ink);
-      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+    body{margin:0; font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; color:var(--ink);
+      background:
+        radial-gradient(60vw 60vw at 110% -10%, rgba(135,110,255,.20), transparent 60%),
+        radial-gradient(60vw 60vw at -10% -20%, rgba(64,186,255,.22), transparent 60%),
+        linear-gradient(180deg,#0b1017,#0b1017);
     }
     header{
-      border-bottom: 2px solid var(--line);
-      padding: 14px 16px; display:flex; align-items:center; justify-content:space-between; gap:12px;
+      position:sticky; top:0; z-index:10; padding:16px clamp(14px,3vw,28px);
+      display:flex; align-items:center; justify-content:space-between; gap:14px;
+      background:linear-gradient(180deg,#0b1017,rgba(11,16,23,.75)); border-bottom:1px solid var(--line);
+      backdrop-filter: blur(8px);
     }
-    .brand{display:flex; align-items:flex-end; gap:10px}
-    .logo{
-      width:42px; height:42px; border:2px solid var(--line); border-radius:6px; display:grid; place-items:center;
-      font-weight:800; letter-spacing:.5px;
+    .brand{display:flex; align-items:center; gap:12px}
+    .logo{width:42px; height:42px; border-radius:12px; display:grid; place-items:center; font-weight:900; letter-spacing:.25px;
+      background:
+        radial-gradient(60% 60% at 25% 20%, #1fe4ff55, transparent 60%),
+        radial-gradient(60% 60% at 70% 75%, #9b8cff55, transparent 60%),
+        #111a2a; box-shadow: inset 0 0 0 1px #1b2436;
     }
-    h1{margin:0; font-size:18px; font-weight:800; letter-spacing:.2px}
+    h1{margin:0; font-size:18px; font-weight:800}
     .sub{font-size:12px; color:var(--muted); font-weight:600}
-    .chip{
-      border:2px solid var(--line); background:#fff; padding:8px 12px; border-radius: 999px; font-weight:800; cursor:pointer;
+
+    .chip{display:inline-flex; align-items:center; gap:8px; padding:10px 14px; border-radius:999px;
+      background:linear-gradient(90deg,#65d1ff,#9ab8ff); color:#05101d; font-weight:900; border:0; cursor:pointer;
+      box-shadow: 0 10px 24px rgba(101,209,255,.28);
     }
-    .chip:disabled{opacity:.6; cursor:not-allowed}
-    main{max-width:1180px; margin: 24px auto 80px; padding: 0 12px}
-    .banner{
-      border:2px solid var(--line); border-radius: var(--radius);
-      padding:12px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;
-      background:#fff;
+    .meta{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
+    .pill{font:700 12px "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      color:#d9e6ff; border:1px solid #25324a; background:#0c1322; padding:8px 12px; border-radius:999px; box-shadow: var(--shadow);
     }
-    .mono{ font-family: "Spline Sans Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-    .pill{ border:2px solid var(--line); padding:6px 10px; border-radius: 999px; font-weight:800; background:#fff }
-    .grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:16px }
-    @media (max-width: 980px){ .grid{ grid-template-columns:1fr; } }
-    .card{
-      border:2px solid var(--line); border-radius: var(--radius); background:#fff; padding:14px;
-    }
-    .card h2{ margin:0 0 8px; font-size:16px; font-weight:800 }
-    .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center }
-    label{ font-size:12px; font-weight:800; letter-spacing:.03em; text-transform:uppercase; color:#222 }
-    input{
-      width:100%; padding:12px 12px; border:2px solid var(--line); border-radius:8px; background:#fff; color:#111; font-weight:800;
-      outline:none;
-    }
-    input:focus{ box-shadow: 4px 4px 0 #000; }
-    .two{ display:grid; grid-template-columns:1fr 1fr; gap:10px }
-    .btn{
-      border:2px solid var(--line); background:#fff; padding:12px 14px; border-radius:8px; font-weight:800; cursor:pointer;
-    }
-    .btn:disabled{opacity:.6; cursor:not-allowed}
-    .btn.primary{ background:#e6fffb; border-color:#000; }
-    .btn.alt{ background:#eef2ff; }
-    .btn.warn{ background:#fff7ed; }
-    .status{
-      border:2px dashed var(--line); border-radius:8px; padding:10px; font:600 12px Inter; color:#222; background:#fff; word-break:break-all;
-      margin-top:10px;
-    }
-    .status.ok{ border-style:solid; color:#0f5132; background:#d1fae5 }
-    .status.err{ border-style:solid; color:#7f1d1d; background:#fee2e2 }
-    .big{
-      font-size:22px; font-weight:800; letter-spacing:-.02em; border:2px solid var(--line); padding:10px 12px; border-radius:10px; background:#fff;
-    }
+
+    main{max-width:1180px; margin:28px auto 80px; padding:0 16px}
+    .grid{display:grid; grid-template-columns:1fr 1fr; gap:18px}
+    @media (max-width:980px){ .grid{ grid-template-columns:1fr; } }
+
+    .card{background:linear-gradient(180deg,#0f1521,#0b1120); border:1px solid var(--line); border-radius:var(--radius); padding:16px; box-shadow: var(--shadow)}
+    .card h2{margin:0 0 8px; font-size:16px; font-weight:800}
+
+    label{display:block; margin:10px 0 6px; font-size:12px; color:#c7d5f1; font-weight:800; letter-spacing:.02em}
+    input{width:100%; padding:12px 14px; border-radius:14px; border:1px solid #1e2940; background:#0d1424; color:#e8f1ff; font-weight:800; outline:none}
+    input::placeholder{color:#7e8fb1}
+    input:focus{box-shadow:0 0 0 6px rgba(120,178,255,.16), inset 0 0 0 1px #7cc9ff}
+
+    .row{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+    .btn{appearance:none; border:0; border-radius:14px; padding:12px 14px; font-weight:900; cursor:pointer; color:#07111f; letter-spacing:.2px;
+      background:linear-gradient(90deg,#62e7ff,#8e7dff); box-shadow:0 16px 40px rgba(98,231,255,.22)}
+    .btn.alt{background:linear-gradient(90deg,#ffd58a,#ffe9ba); color:#111}
+
+    .status{margin-top:10px; border-radius:12px; padding:12px; background:#0d1526; border:1px dashed #23314c;
+      color:#b8c6e8; font:700 12px Inter, sans-serif; min-height:44px; display:flex; align-items:center; word-break:break-all}
+    .status.ok{border-style:solid; color:#caffea; background:#0f221a}
+    .status.err{border-style:solid; color:#ffd4dd; background:#1d0f14}
+
+    .mono{font-family:"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-weight:700}
+    .out{border:1px solid #1e2940; background:#0d1526; color:#e8f1ff; padding:10px 12px; border-radius:12px; display:inline-block; min-width:200px}
+    small.dim{color:#7f92b9}
   </style>
 </head>
 <body>
@@ -87,323 +85,184 @@
   <div class="brand">
     <div class="logo">FHE</div>
     <div>
-      <h1>Secret Bonus Payout</h1>
-      <div class="sub">Encrypted KPIs → Encrypted bonus (only the employee can decrypt)</div>
+      <h1>Private Gas Cap</h1>
+      <div class="sub">Reject above-cap gas without revealing the secret threshold</div>
     </div>
   </div>
-  <div class="row">
-    <span id="netTag" class="pill mono">Network: —</span>
-    <button id="btnConnect" class="chip">Connect Wallet</button>
-  </div>
+  <button id="btnConnect" class="chip">Link Wallet</button>
 </header>
 
 <main>
-  <section class="banner">
-    <span class="pill mono">Contract</span>
-    <span id="addr" class="pill mono">0x13274eA87Db740ca19f1d85B8c0c6aDf90a0a4EB</span>
-    <span class="pill mono">Relayer SDK 0.2.0</span>
-    <span class="pill mono">Ethers v6</span>
-  </section>
+  <div class="meta" style="justify-content:space-between; margin-bottom:18px;">
+    <div class="meta">
+      <span class="pill">Contract</span>
+      <span id="addr" class="pill">0xF78920466F1e88d231aAF5F01CA7b500C9b72F44</span>
+      <span class="pill">Relayer SDK 0.2.0</span>
+      <span class="pill">Ethers v6</span>
+      <span id="ownerTag" class="pill">Owner: —</span>
+    </div>
+    <span id="netTag" class="pill">Network: —</span>
+  </div>
 
   <section class="grid">
-    <!-- Employee panel -->
+    <!-- Precheck -->
     <article class="card">
-      <h2>Employee · Request Private Bonus</h2>
-      <div class="two">
-        <div>
-          <label>Quality (0..255)</label>
-          <input id="q" type="number" min="0" max="255" placeholder="e.g. 90"/>
-        </div>
-        <div>
-          <label>Velocity (0..255)</label>
-          <input id="v" type="number" min="0" max="255" placeholder="e.g. 85"/>
-        </div>
-      </div>
-      <div style="margin-top:10px">
-        <label>Impact (0..255)</label>
-        <input id="i" type="number" min="0" max="255" placeholder="e.g. 80"/>
+      <h2>Private gas precheck</h2>
+      <p class="sub">We compute an encrypted verdict <b>(gasleft ≤ secret cap)</b> and let only you decrypt it.</p>
+
+      <div class="row" style="margin-top:8px">
+        <button id="btnPrecheck" class="btn">Run Encrypted Precheck</button>
+        <span id="preTx" class="pill mono">—</span>
       </div>
 
-      <div class="row" style="margin-top:12px">
-        <button id="btnEval" class="btn primary">Submit Encrypted KPIs</button>
-        <span id="empTx" class="pill mono">—</span>
-      </div>
-      <div id="empLog" class="status">—</div>
-      <div style="margin-top:10px" class="row">
-        <span class="big mono" id="bonusOut">$ —</span>
+      <div id="preLog" class="status">—</div>
+
+      <div class="row" style="margin-top:10px">
+        <span class="out mono" id="verdictOut">Verdict: —</span>
+        <small class="dim mono" id="gasSnap">gasleft(): —</small>
       </div>
     </article>
 
-    <!-- Admin panel -->
+    <!-- Owner tools & guarded execute -->
     <article class="card">
-      <h2>Admin · Encrypted Policy</h2>
-      <div class="two">
-        <div>
-          <label>minQuality (u8)</label>
-          <input id="minQ" type="number" min="0" max="255" placeholder="e.g. 80"/>
-        </div>
-        <div>
-          <label>minVelocity (u8)</label>
-          <input id="minV" type="number" min="0" max="255" placeholder="e.g. 80"/>
-        </div>
-      </div>
-      <div class="two" style="margin-top:10px">
-        <div>
-          <label>minImpact (u8)</label>
-          <input id="minI" type="number" min="0" max="255" placeholder="e.g. 75"/>
-        </div>
-        <div>
-          <label>bonusYes (u32)</label>
-          <input id="bYes" type="number" min="0" max="4294967295" placeholder="e.g. 5000"/>
-        </div>
-      </div>
-      <div style="margin-top:10px">
-        <label>bonusNo (u32)</label>
-        <input id="bNo" type="number" min="0" max="4294967295" placeholder="e.g. 500"/>
-      </div>
+      <h2>Admin & Guarded execution</h2>
+      <p class="sub">Dev: set plain secret cap. Then issue a Pass (EIP-712) and execute the protected action.</p>
 
-      <div class="row" style="margin-top:12px">
-        <button id="btnSetEnc" class="btn primary">Set Encrypted Policy</button>
-        <button id="btnSetPlain" class="btn alt">Set Plain (dev)</button>
-        <button id="btnPublic" class="btn warn">Make Policy Public</button>
+      <label>Set secret cap (plain, dev only)</label>
+      <div class="row">
+        <input id="capPlain" type="number" min="0" max="4294967295" placeholder="e.g. 1_000_000 (gas left)"/>
+        <button id="btnSetPlain" class="btn alt">Install Dev Cap</button>
       </div>
       <div id="admLog" class="status">—</div>
 
-      <div style="margin-top:10px">
-        <label>Policy handles</label>
-        <div id="handles" class="status mono" style="white-space:pre-wrap">—</div>
+      <label style="margin-top:10px">Current cap handle</label>
+      <div id="capHandle" class="status mono">—</div>
+
+      <div style="height:1px;background:#202d45;margin:14px 0"></div>
+
+      <h3 style="margin:0 0 6px;font-size:14px">Issue Pass (owner signs)</h3>
+      <label>Deadline (unix seconds)</label>
+      <input id="deadline" type="number" min="0" placeholder="e.g. now + 600"/>
+      <div class="row" style="margin-top:10px">
+        <button id="btnIssueSelf" class="btn">Issue Pass to Me</button>
+        <button id="btnIssueClipboard" class="btn">Copy Signature JSON</button>
       </div>
+      <div id="passLog" class="status">—</div>
+
+      <h3 style="margin:12px 0 6px;font-size:14px">Execute guarded action</h3>
+      <label>Paste signature JSON (v,r,s,deadline)</label>
+      <input id="sigJson" type="text" placeholder='{"v":27,"r":"0x..","s":"0x..","deadline": 9999999999}'/>
+      <div class="row" style="margin-top:10px">
+        <button id="btnExec" class="btn">guardedExecute()</button>
+        <span id="execTx" class="pill mono">—</span>
+      </div>
+      <div id="execLog" class="status">—</div>
     </article>
   </section>
 </main>
 
-<!-- SDKs (ESM) -->
+<!-- SDKs -->
 <script type="module" crossorigin src="https://cdn.zama.ai/relayer-sdk-js/0.2.0/relayer-sdk-js.js"></script>
-<script type="module" crossorigin src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/+esm"></script>
+<script type="module" crossorigin src="https://cdn.jsdelivr.net/npm/ethers@6.15.0/+esm"></script>
 
 <script type="module">
-  import { BrowserProvider, Contract } from "https://cdn.jsdelivr.net/npm/ethers@6.13.4/+esm";
+  import { BrowserProvider, Contract } from "https://cdn.jsdelivr.net/npm/ethers@6.15.0/+esm";
   import { initSDK, createInstance, SepoliaConfig, generateKeypair } from "https://cdn.zama.ai/relayer-sdk-js/0.2.0/relayer-sdk-js.js";
 
   // ===== Config =====
-  const CONTRACT_ADDRESS = "0x13274eA87Db740ca19f1d85B8c0c6aDf90a0a4EB";
+  const CONTRACT_ADDRESS = "0xF78920466F1e88d231aAF5F01CA7b500C9b72F44";
   const RELAYER_URL = "https://relayer.testnet.zama.cloud";
   const CHAIN_ID_HEX = "0xaa36a7"; // Sepolia
 
-  // ABI subset — SecretBonusPayout
+  // ===== ABI =====
   const abi = [
     { type:"function", name:"version", inputs:[], outputs:[{type:"string"}], stateMutability:"pure" },
-
-    { type:"function", name:"setPolicyEncrypted", inputs:[
-      {type:"bytes32"}, {type:"bytes32"}, {type:"bytes32"}, {type:"bytes32"}, {type:"bytes32"}, {type:"bytes"}
-    ], outputs:[], stateMutability:"nonpayable" },
-
-    { type:"function", name:"setPolicyPlain", inputs:[
-      {type:"uint8"},{type:"uint8"},{type:"uint8"},{type:"uint32"},{type:"uint32"}
-    ], outputs:[], stateMutability:"nonpayable" },
-
-    { type:"function", name:"getPolicyHandles", inputs:[], outputs:[
-      {type:"bytes32"},{type:"bytes32"},{type:"bytes32"},{type:"bytes32"},{type:"bytes32"},{type:"bool"}
-    ], stateMutability:"view" },
-
-    { type:"function", name:"makePolicyPublic", inputs:[], outputs:[], stateMutability:"nonpayable" },
-
-    { type:"function", name:"evaluateKPIs", inputs:[
-      {type:"bytes32"}, {type:"bytes32"}, {type:"bytes32"}, {type:"bytes"}
-    ], outputs:[{type:"bytes32"}], stateMutability:"nonpayable" },
-
-    { type:"event", name:"PolicyUpdated", inputs:[
-      {indexed:false, name:"minQualityH", type:"bytes32"},
-      {indexed:false, name:"minVelocityH", type:"bytes32"},
-      {indexed:false, name:"minImpactH", type:"bytes32"},
-      {indexed:false, name:"bonusYesH", type:"bytes32"},
-      {indexed:false, name:"bonusNoH", type:"bytes32"}
-    ]},
-    { type:"event", name:"BonusComputed", inputs:[
-      {indexed:true, name:"employee", type:"address"},
-      {indexed:false, name:"bonusHandle", type:"bytes32"}
-    ]},
+    { type:"function", name:"owner", inputs:[], outputs:[{type:"address"}], stateMutability:"view" },
+    { type:"function", name:"setCapPlain", inputs:[{type:"uint32"}], outputs:[], stateMutability:"nonpayable" },
+    { type:"function", name:"getCapHandle", inputs:[], outputs:[{type:"bytes32"}], stateMutability:"view" },
+    { type:"function", name:"makeCapPublic", inputs:[], outputs:[], stateMutability:"nonpayable" },
+    { type:"function", name:"precheckGas", inputs:[], outputs:[{type:"bytes1"}], stateMutability:"nonpayable" },
+    { type:"function", name:"guardedExecute", inputs:[{type:"uint256"},{type:"uint8"},{type:"bytes32"},{type:"bytes32"}], outputs:[], stateMutability:"nonpayable" },
+    { type:"event", name:"GasPrechecked", inputs:[
+      {indexed:true, name:"caller", type:"address"},
+      {indexed:false, name:"verdictHandle", type:"bytes32"},
+      {indexed:false, name:"snapshotGasLeft", type:"uint256"}
+    ] },
+    { type:"event", name:"GasCapUpdated", inputs:[{indexed:false, name:"capHandle", type:"bytes32"}] },
+    { type:"event", name:"GuardedExecuted", inputs:[{indexed:true, name:"caller", type:"address"},{indexed:false, name:"nonce", type:"uint256"}] },
   ];
 
   // ===== Elements =====
   const $ = (id)=>document.getElementById(id);
   const els = {
-    netTag: $("netTag"), btnConnect: $("btnConnect"), addr: $("addr"),
-    // employee
-    q: $("q"), v: $("v"), i: $("i"), btnEval: $("btnEval"), empLog: $("empLog"), empTx: $("empTx"), bonusOut: $("bonusOut"),
-    // admin
-    minQ: $("minQ"), minV: $("minV"), minI: $("minI"), bYes: $("bYes"), bNo: $("bNo"),
-    btnSetEnc: $("btnSetEnc"), btnSetPlain: $("btnSetPlain"), btnPublic: $("btnPublic"),
-    admLog: $("admLog"), handles: $("handles"),
+    netTag: $("netTag"), btnConnect: $("btnConnect"), addr: $("addr"), ownerTag: $("ownerTag"),
+    btnPrecheck: $("btnPrecheck"), preLog: $("preLog"), preTx: $("preTx"), verdictOut: $("verdictOut"), gasSnap: $("gasSnap"),
+    capPlain: $("capPlain"), btnSetPlain: $("btnSetPlain"), admLog: $("admLog"), capHandle: $("capHandle"),
+    deadline: $("deadline"), btnIssueSelf: $("btnIssueSelf"), btnIssueClipboard: $("btnIssueClipboard"), passLog: $("passLog"),
+    sigJson: $("sigJson"), btnExec: $("btnExec"), execLog: $("execLog"), execTx: $("execTx"),
   };
   els.addr.textContent = CONTRACT_ADDRESS;
 
   // ===== State =====
-  let provider, signer, user, contract, relayer;
+  let provider, signer, user, contract, relayer, chainId;
 
   // ===== Helpers =====
-  const info = (el, t)=>{ el.className="status"; el.textContent=t; };
-  const ok   = (el, t)=>{ el.className="status ok"; el.textContent=t; };
-  const err  = (el, t)=>{ el.className="status err"; el.textContent=t; };
-  const isU8  = (n)=>Number.isInteger(n) && n>=0 && n<=255;
-  const isU32 = (n)=>Number.isInteger(n) && n>=0 && n<=4294967295;
+  const info = (el,t)=>{ el.className="status"; el.textContent=t; };
+  const ok   = (el,t)=>{ el.className="status ok"; el.textContent=t; };
+  const err  = (el,t)=>{ el.className="status err"; el.textContent=t; };
   const short = (a)=>a ? a.slice(0,6)+"…"+a.slice(-4) : "—";
+  const nowSec = ()=> Math.floor(Date.now()/1000);
 
-  // ===== Connect =====
-  els.btnConnect.onclick = async ()=>{
+  async function connect(){
+    if(!window.ethereum) throw new Error("MetaMask not found");
+    provider = new BrowserProvider(window.ethereum);
+    await provider.send("eth_requestAccounts", []);
+    const net = await provider.getNetwork();
+    chainId = Number(net.chainId);
+    els.netTag.textContent = chainId===11155111 ? "Network: Sepolia" : `Network: ${String(net.chainId)}`;
+    if (net.chainId !== 11155111n){
+      await provider.send("wallet_switchEthereumChain", [{ chainId: CHAIN_ID_HEX }]);
+    }
+    signer = await provider.getSigner();
+    user = await signer.getAddress();
+    contract = new Contract(CONTRACT_ADDRESS, abi, signer);
+    els.btnConnect.textContent = "Linked: " + short(user);
+
+    await initSDK();
+    relayer = await createInstance({ ...SepoliaConfig, relayerUrl: RELAYER_URL, network: window.ethereum, debug: true });
+
     try{
-      if(!window.ethereum) throw new Error("MetaMask not found");
-      provider = new BrowserProvider(window.ethereum);
-      await provider.send("eth_requestAccounts", []);
-      const net = await provider.getNetwork();
-      els.netTag.textContent = net.chainId===11155111n ? "Network: Sepolia" : `Network: ${String(net.chainId)}`;
-      if(net.chainId !== 11155111n){
-        await provider.send("wallet_switchEthereumChain", [{ chainId: CHAIN_ID_HEX }]);
-      }
-      signer = await provider.getSigner();
-      user = await signer.getAddress();
-      contract = new Contract(CONTRACT_ADDRESS, abi, signer);
-      els.btnConnect.textContent = short(user);
+      const o = await contract.owner();
+      els.ownerTag.textContent = `Owner: ${short(o)} ${o.toLowerCase()===user.toLowerCase()?"(you)":""}`;
+    }catch{ els.ownerTag.textContent = "Owner: n/a"; }
 
-      info(els.admLog, "Bootstrapping Relayer…");
-      await initSDK();
-      relayer = await createInstance({ ...SepoliaConfig, relayerUrl: RELAYER_URL, network: window.ethereum, debug: true });
-      ok(els.admLog, "Relayer ready ✓");
+    try{ els.capHandle.textContent = String(await contract.getCapHandle()); }catch{}
+  }
 
-      // Try to read policy handles
-      try{
-        const h = await contract.getPolicyHandles();
-        els.handles.textContent =
-`minQ: ${h[0]}
-minV: ${h[1]}
-minI: ${h[2]}
-bonusYes: ${h[3]}
-bonusNo : ${h[4]}
-exists : ${h[5]}`;
-      }catch{}
-    }catch(e){ err(els.admLog, e.message || String(e)); }
-  };
+  els.btnConnect.onclick = connect;
 
-  // ===== Admin: set encrypted policy =====
-  els.btnSetEnc.onclick = async ()=>{
+  // ===== Private precheck =====
+  els.btnPrecheck.onclick = async ()=>{
     try{
-      if(!relayer || !contract) await els.btnConnect.onclick();
-
-      const minQ = Number(els.minQ.value || 0);
-      const minV = Number(els.minV.value || 0);
-      const minI = Number(els.minI.value || 0);
-      const bYes = Number(els.bYes.value || 0);
-      const bNo  = Number(els.bNo.value  || 0);
-
-      if(!isU8(minQ) || !isU8(minV) || !isU8(minI) || !isU32(bYes) || !isU32(bNo)) throw new Error("Out of range");
-
-      info(els.admLog, "Encrypting policy…");
-      const buf = relayer.createEncryptedInput(CONTRACT_ADDRESS, user);
-      buf.add8(minQ);
-      buf.add8(minV);
-      buf.add8(minI);
-      buf.add32(bYes);
-      buf.add32(bNo);
-      const { handles, inputProof } = await buf.encrypt();
-
-      // staticCall (may fail on some RPCs; ok to fall through)
-      try{ await contract.setPolicyEncrypted.staticCall(handles[0], handles[1], handles[2], handles[3], handles[4], inputProof); }catch{}
-
-      const tx = await contract.setPolicyEncrypted(handles[0], handles[1], handles[2], handles[3], handles[4], inputProof);
-      info(els.admLog, `TX: ${tx.hash}`);
-      await tx.wait();
-      ok(els.admLog, "Encrypted policy set ✓");
-
-      const h = await contract.getPolicyHandles();
-      els.handles.textContent =
-`minQ: ${h[0]}
-minV: ${h[1]}
-minI: ${h[2]}
-bonusYes: ${h[3]}
-bonusNo : ${h[4]}
-exists : ${h[5]}`;
-
-    }catch(e){ err(els.admLog, e.message || String(e)); }
-  };
-
-  // ===== Admin: set plain policy (dev) =====
-  els.btnSetPlain.onclick = async ()=>{
-    try{
-      if(!contract) await els.btnConnect.onclick();
-      const minQ = Number(els.minQ.value || 0);
-      const minV = Number(els.minV.value || 0);
-      const minI = Number(els.minI.value || 0);
-      const bYes = Number(els.bYes.value || 0);
-      const bNo  = Number(els.bNo.value  || 0);
-      if(!isU8(minQ) || !isU8(minV) || !isU8(minI) || !isU32(bYes) || !isU32(bNo)) throw new Error("Out of range");
-
-      const tx = await contract.setPolicyPlain(minQ, minV, minI, bYes, bNo);
-      info(els.admLog, `TX: ${tx.hash}`);
-      await tx.wait();
-      ok(els.admLog, "Plain policy set ✓");
-
-      const h = await contract.getPolicyHandles();
-      els.handles.textContent =
-`minQ: ${h[0]}
-minV: ${h[1]}
-minI: ${h[2]}
-bonusYes: ${h[3]}
-bonusNo : ${h[4]}
-exists : ${h[5]}`;
-
-    }catch(e){ err(els.admLog, e.message || String(e)); }
-  };
-
-  // ===== Admin: make policy public (demo)
-  els.btnPublic.onclick = async ()=>{
-    try{
-      if(!contract) await els.btnConnect.onclick();
-      const tx = await contract.makePolicyPublic();
-      info(els.admLog, `TX: ${tx.hash}`);
-      await tx.wait();
-      ok(els.admLog, "Policy marked public ✓");
-    }catch(e){ err(els.admLog, e.message || String(e)); }
-  };
-
-  // ===== Employee: evaluate KPIs =====
-  els.btnEval.onclick = async ()=>{
-    try{
-      if(!relayer || !contract) await els.btnConnect.onclick();
-
-      const q = Number(els.q.value || 0);
-      const v = Number(els.v.value || 0);
-      const i = Number(els.i.value || 0);
-      if(!isU8(q) || !isU8(v) || !isU8(i)) throw new Error("Inputs out of range");
-
-      info(els.empLog, "Encrypting KPIs…");
-      els.bonusOut.textContent = "$ —";
-
-      const buf = relayer.createEncryptedInput(CONTRACT_ADDRESS, user);
-      buf.add8(q);
-      buf.add8(v);
-      buf.add8(i);
-      const { handles, inputProof } = await buf.encrypt();
-
-      try{ await contract.evaluateKPIs.staticCall(handles[0], handles[1], handles[2], inputProof); }catch{}
-
-      const tx = await contract.evaluateKPIs(handles[0], handles[1], handles[2], inputProof);
-      els.empTx.textContent = tx.hash;
-      info(els.empLog, "Waiting for receipt…");
+      if(!contract) await connect();
+      info(els.preLog, "Sending precheck…");
+      const tx = await contract.precheckGas();
+      els.preTx.textContent = tx.hash;
       const rcpt = await tx.wait();
 
-      // Parse BonusComputed(employee, bonusHandle)
-      const iface = new Contract(CONTRACT_ADDRESS, abi, signer).interface;
-      const topic = iface.getEvent("BonusComputed").topicHash;
+      // Parse GasPrechecked
+      const topic = contract.interface.getEvent("GasPrechecked").topicHash;
       const log = rcpt.logs.find(l => l.topics?.[0] === topic);
-      if(!log){ throw new Error("Event not found"); }
-      const parsed = iface.parseLog(log);
-      const handle = parsed.args.bonusHandle;
+      if(!log) throw new Error("GasPrechecked not found");
+      const parsed = contract.interface.parseLog(log);
+      const handle = parsed.args.verdictHandle;
+      const snapshot = parsed.args.snapshotGasLeft;
+      els.gasSnap.textContent = `gasleft(): ${snapshot}`;
 
-      info(els.empLog, "Decrypting bonus…");
-
-      // EIP-712 userDecrypt (employee only)
+      info(els.preLog, "Decrypting verdict…");
+      // userDecrypt flow
       const kp = await generateKeypair();
-      const startTs = Math.floor(Date.now()/1000).toString();
+      const startTs = String(nowSec());
       const days = "7";
       const eip = relayer.createEIP712(kp.publicKey, [CONTRACT_ADDRESS], startTs, days);
       const sig = await signer.signTypedData(
@@ -412,38 +271,121 @@ exists : ${h[5]}`;
         eip.message
       );
 
-      const pairs = [{ handle, contractAddress: CONTRACT_ADDRESS }];
-      const out = await relayer.userDecrypt(pairs, kp.privateKey, kp.publicKey, sig.replace("0x",""),
-                                            [CONTRACT_ADDRESS], user, startTs, days);
+      const out = await relayer.userDecrypt(
+        [{ handle, contractAddress: CONTRACT_ADDRESS }],
+        kp.privateKey, kp.publicKey, sig.replace("0x",""),
+        [CONTRACT_ADDRESS], user, startTs, days
+      );
 
-      let val = out[handle];
-      if(val === undefined){
+      let v = out[handle];
+      if(v===undefined){
         const k = Object.keys(out).find(k => k.toLowerCase() === handle.toLowerCase());
-        val = k ? out[k] : undefined;
+        v = k ? out[k] : undefined;
       }
-      if(val === undefined) throw new Error("Decryption failed");
-
-      // val is u32 (string/number/bigint). Normalize:
-      const num = Number(val);
-      if(Number.isFinite(num)){
-        els.bonusOut.textContent = `$ ${num.toLocaleString()}`;
-        ok(els.empLog, "Bonus decrypted ✓");
-      }else{
-        els.bonusOut.textContent = `$ ${String(val)}`;
-        ok(els.empLog, "Bonus decrypted ✓ (non-numeric)");
-      }
-    }catch(e){ err(els.empLog, e.message || String(e)); }
+      const yes = (v===true || v==="true" || v===1 || v==="1");
+      els.verdictOut.textContent = yes ? "Verdict: OK ✅" : "Verdict: OVER CAP ❌";
+      ok(els.preLog, "Done");
+    }catch(e){ err(els.preLog, e?.message || String(e)); }
   };
 
-  // Network badge on load if wallet present
-  (async ()=>{
+  // ===== Admin: set cap (plain, dev) =====
+  els.btnSetPlain.onclick = async ()=>{
     try{
-      if(window.ethereum){
-        const net = await (new BrowserProvider(window.ethereum)).getNetwork();
-        els.netTag.textContent = net.chainId===11155111n ? "Network: Sepolia" : `Network: ${String(net.chainId)}`;
-      }
-    }catch{}
-  })();
+      if(!contract) await connect();
+      const v = Number(els.capPlain.value || 0);
+      if(!Number.isInteger(v) || v<0 || v>0xFFFFFFFF) throw new Error("Enter uint32 (0..4294967295)");
+      info(els.admLog, "Submitting setCapPlain…");
+      const tx = await contract.setCapPlain(v);
+      info(els.admLog, `TX: ${tx.hash}`);
+      await tx.wait();
+      ok(els.admLog, "Cap installed ✓");
+      try{ els.capHandle.textContent = String(await contract.getCapHandle()); }catch{}
+    }catch(e){ err(els.admLog, e?.shortMessage || e?.message || String(e)); }
+  };
+
+  // ===== EIP-712 Pass helpers (owner issues) =====
+  function passDomain(){
+    return { name: "PrivateGasCap", version: "1", chainId, verifyingContract: CONTRACT_ADDRESS };
+  }
+  const PassTypes = {
+    GasPass: [
+      { name: "contractAddr", type: "address" },
+      { name: "caller",       type: "address" },
+      { name: "nonce",        type: "uint256" },
+      { name: "deadline",     type: "uint256" },
+    ],
+  };
+
+  // We cannot read nonces mapping without ABI; user will just set a fresh deadline, and
+  // contract will check and consume current nonce internally. For demo we assume correct nonce.
+  // Owner signs a pass for current caller (user).
+
+  els.btnIssueSelf.onclick = async ()=>{
+    try{
+      if(!contract) await connect();
+      const deadline = Number(els.deadline.value || (nowSec()+600));
+      const message = {
+        contractAddr: CONTRACT_ADDRESS,
+        caller: user,
+        nonce: 0,          // placeholder; contract uses its own stored nonce
+        deadline
+      };
+      const sig = await signer.signTypedData(passDomain(), PassTypes, message);
+      const { v, r, s } = splitSig(sig);
+      els.sigJson.value = JSON.stringify({ v, r, s, deadline });
+      ok(els.passLog, "Pass signed for your address (paste below to execute)");
+    }catch(e){ err(els.passLog, e?.message || String(e)); }
+  };
+
+  els.btnIssueClipboard.onclick = async ()=>{
+    try{
+      if(!contract) await connect();
+      const toAddr = user; // you can change to any address here
+      const deadline = Number(els.deadline.value || (nowSec()+600));
+      const msg = { contractAddr: CONTRACT_ADDRESS, caller: toAddr, nonce: 0, deadline };
+      const sig = await signer.signTypedData(passDomain(), PassTypes, msg);
+      const { v, r, s } = splitSig(sig);
+      const payload = JSON.stringify({ v, r, s, deadline });
+      await navigator.clipboard.writeText(payload);
+      ok(els.passLog, "Signature JSON copied to clipboard");
+    }catch(e){ err(els.passLog, e?.message || String(e)); }
+  };
+
+  function splitSig(sigHex){
+    const hex = sigHex.replace(/^0x/,'');
+    const r = "0x" + hex.slice(0,64);
+    const s = "0x" + hex.slice(64,128);
+    let v = parseInt(hex.slice(128,130), 16);
+    if (v < 27) v += 27;
+    return { v, r, s };
+  }
+
+  // ===== Execute guarded action =====
+  els.btnExec.onclick = async ()=>{
+    try{
+      if(!contract) await connect();
+      const raw = (els.sigJson.value||"").trim();
+      if(!raw) throw new Error("Paste the signature JSON first");
+      let obj;
+      try{ obj = JSON.parse(raw); }catch{ throw new Error("Invalid JSON"); }
+      const { v, r, s, deadline } = obj || {};
+      if (typeof v!=="number" || !/^0x[0-9a-fA-F]{64}$/.test(r||"") || !/^0x[0-9a-fA-F]{64}$/.test(s||"") || !Number.isInteger(deadline))
+        throw new Error("JSON must contain { v:number, r:0x..64, s:0x..64, deadline:number }");
+      info(els.execLog, "Submitting guardedExecute…");
+      const tx = await contract.guardedExecute(deadline, v, r, s);
+      els.execTx.textContent = tx.hash;
+      await tx.wait();
+      ok(els.execLog, "Guarded action executed ✓");
+    }catch(e){ err(els.execLog, e?.shortMessage || e?.message || String(e)); }
+  };
+
+  // Paint network badge on load
+  (async ()=>{ try{
+    if(window.ethereum){
+      const net = await (new BrowserProvider(window.ethereum)).getNetwork();
+      els.netTag.textContent = net.chainId===11155111n ? "Network: Sepolia" : `Network: ${String(net.chainId)}`;
+    }
+  }catch{} })();
 </script>
 </body>
 </html>

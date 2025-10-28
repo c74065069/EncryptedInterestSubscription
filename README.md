@@ -1,130 +1,107 @@
-# Secret Bonus Payout · Zama FHEVM
+# Encrypted Interest Subscription · Zama FHEVM
 
-Privacy-preserving bonus allocation on-chain. Employees submit **encrypted KPIs**; the contract returns an **encrypted bonus amount** that only the employee can decrypt via Zama’s Relayer SDK. Policy thresholds and bonus values are kept encrypted on-chain.
-
-> **Network**: Sepolia
-> **Contract (deployed)**: `0x13274eA87Db740ca19f1d85B8c0c6aDf90a0a4EB`
-> **Frontend entry**: `frontend/public/bonus.html`
-> **Relayer SDK**: `@zama-fhe/relayer-sdk` v0.2.0
-> **Solidity**: `0.8.24` (recommended: `viaIR: true`, optimizer enabled)
+**Private, personalized content using encrypted interest tags.** Users save their interests as an encrypted 32‑bit bitmask (`euint32`). Creators tag content (encrypted or plain for dev). Matching is done **privately on ciphertext**: `match = (userMask & contentMask) != 0`. The contract returns an **encrypted boolean**; only the requester can decrypt it with the Relayer SDK.
 
 ---
 
-## Overview
+## ✨ Highlights
 
-**Secret Bonus Payout** implements a private bonus workflow on Zama FHEVM:
-
-* **Owner** uploads a global **encrypted policy**: `minQuality (u8)`, `minVelocity (u8)`, `minImpact (u8)`, `bonusYes (u32)`, `bonusNo (u32)`.
-* **Employee** submits encrypted KPIs (`quality`, `velocity`, `impact`).
-* Contract computes: `cond = (q≥minQ) && (v≥minV) && (i≥minI)` → `bonus = cond ? bonusYes : bonusNo`.
-* Only the **employee (msg.sender)** gets decrypt rights to the encrypted `bonus` using **userDecrypt (EIP‑712)**.
-
----
-
-## Core Features
-
-* 🔒 All sensitive values are encrypted (`euint8`, `euint32`) using official Zama Solidity library.
-* 🎯 Binary policy check with private result; no KPIs or thresholds are revealed.
-* 🔐 Access control via `FHE.allow` (employee-only decryption) and `FHE.allowThis` for reuse.
-* 🧪 Dev helpers: plain policy setter and public decrypt flags (for demos).
+* **Encrypted user profiles** — Users store interests as `euint32` (32 tags). No plaintext leakage.
+* **Encrypted/Plain content tags** — Post content with encrypted masks (prod) or plain masks (dev/demo).
+* **Private matching** — `(user & content) != 0` computed under FHE; verdict is an encrypted `ebool`.
+* **Caller‑only decryption** — Use `userDecrypt` (Relayer SDK 0.2.0) to reveal only your own verdict.
+* **Auditability** — Bytes32 **handles** for ciphertexts; optional `make*Public()` for demos.
 
 ---
 
-## Contract
+## 🧱 Smart Contract (overview)
 
-**File**: `contracts/SecretBonusPayout.sol`
+Contract name: **`EncryptedInterestSubscription`**
 
-**Key storage**
+**User functions**
 
-```solidity
-// thresholds
- euint8  _minQuality;
- euint8  _minVelocity;
- euint8  _minImpact;
-// bonus amounts
- euint32 _bonusYes;
- euint32 _bonusNo;
- bool    _policyExists;
-```
+* `setMyTagsEncrypted(externalEuint32 tagsExt, bytes proof)` — Save encrypted interests (Relayer SDK input + proof).
+* `setMyTagsPlain(uint32 bitmask)` — Dev‑only plain setter (do **not** use in prod).
+* `clearMyTags()` — Reset to zero (no `delete` on `euint`).
+* `myTagsHandle() → bytes32` — Your encrypted handle for audits/tests.
+* `makeUserTagsPublic(address user)` — Owner may mark a user mask publicly decryptable (demo).
 
-**Main functions**
+**Content functions**
 
-* `setPolicyEncrypted(minQ, minV, minI, bonusYes, bonusNo, proof)` — owner sets **encrypted** policy using Relayer SDK handles + proof.
-* `setPolicyPlain(minQ, minV, minI, bonusYes, bonusNo)` — converts clear values to encrypted on-chain (dev only).
-* `makePolicyPublic()` — optional demo: mark policy ciphertexts publicly decryptable.
-* `getPolicyHandles()` — return `bytes32` handles for audits/UI.
-* `evaluateKPIs(quality, velocity, impact, proof)` — returns encrypted `u32` bonus; **only employee** can decrypt.
+* `createContentEncrypted(externalEuint32, bytes) → contentId` — New content with encrypted tags.
+* `createContentPlain(uint32) → contentId` — Dev/demo plain content.
+* `updateContentEncrypted(uint256, externalEuint32, bytes)` — Update to encrypted mask.
+* `updateContentPlain(uint256, uint32)` — Dev/demo update to plain mask.
+* `clearContent(uint256)` — Logical remove (cannot `delete` an `euint`).
+* `contentHandle(uint256) → bytes32` — Ciphertext handle if encrypted.
+* `makeContentMaskPublic(uint256)` — Owner may expose a content mask for public decryption (demo).
 
-**Events**
+**Matching**
 
-* `PolicyUpdated(minQualityH, minVelocityH, minImpactH, bonusYesH, bonusNoH)`
-* `BonusComputed(employee, bonusHandle)`
+* `matchContent(uint256 contentId) → ebool` — Emits `ContentMatched(user, contentId, verdictHandle)`; the caller decrypts privately with Relayer SDK.
 
-**Implementation notes**
-
-* Conditional selection uses `FHE.select(cond, _bonusYes, _bonusNo)` (no `cmux`).
-* Avoid FHE ops in view/pure. Expose only handles via `FHE.toBytes32`.
+> **Tag map:** 32 labels → bits `0..31`. The UI defines labels; the contract treats masks as a 32‑bit set.
 
 ---
 
-## Usage Guide
+## 🖥️ Frontend (single‑file)
 
-### Admin (Owner)
-
-1. **Connect** wallet (Sepolia). The app will bootstrap Relayer.
-2. Enter thresholds and bonus values. Click **Set Encrypted Policy**.
-3. Optionally call **Make Policy Public** for demo/audit.
-4. Use **Policy handles** section for visibility/debug.
-
-### Employee
-
-1. **Connect** with your wallet.
-2. Enter your KPIs (Quality, Velocity, Impact).
-3. Click **Submit Encrypted KPIs**. The UI will:
-
-   * Encrypt inputs (`createEncryptedInput → add8/add8/add8 → encrypt`).
-   * Send handles + `proof` to `evaluateKPIs`.
-   * Read `BonusComputed` event, pick `bonusHandle`.
-   * Request **userDecrypt** with EIP‑712 signature → display `$ bonus`.
+* Location: **`frontend/public/index.html`** (copy to any static host).
+* **Wallet**: Ethers v6 (`BrowserProvider`).
+* **FHE**: Relayer SDK **0.2.0** for creating encrypted inputs and `userDecrypt`.
+* **Panels**: User Interests, Content, Private Match (+ dev shortcuts: plain setters).
 
 ---
 
-## Environment Variables
+## ⚙️ Installation & Run
 
-For Hardhat:
+> Requirements: Node 18+, MetaMask (or compatible), Internet access to Zama test relayer.
 
 ```bash
-SEPOLIA_RPC=https://sepolia.infura.io/v3/<key>
-DEPLOYER_PK=0x<private_key>
-ETHERSCAN_API_KEY=<optional>
+# 1) (Optional) install any repo deps you use
+npm i
+
+# 2) Serve the static frontend (choose one)
+# a) http-server
+npx http-server ./frontend/public -p 8080
+
+# b) Vite as a static server
+npx vite --root frontend/public --port 5173 --strictPort
+
+# 3) Open in the browser
+http://localhost:8080/   # or the Vite URL
 ```
 
-If you move to a bundled frontend (Vite/React), add:
+## 🚀 Quick Usage
 
-```bash
-VITE_RELAYER_URL=https://relayer.testnet.zama.cloud
-VITE_CONTRACT_ADDRESS=0x13274eA87Db740ca19f1d85B8c0c6aDf90a0a4EB
+1. **Connect** — Open `frontend/public/index.html`, click **Connect** (ensure Sepolia).
+2. **Set interests (user)** — Click tags → **Protect & Save** (encrypted) or **Quick Save (dev)**. Your **handle** appears below.
+3. **Create content (author)** — Click tags → **Publish Encrypted** (prod) or **Publish Plain (dev)**. Note the **contentId**.
+4. **Private match (user)** — Enter `contentId` → **Test Private Match**. The app will decrypt the `verdictHandle` (YES/NO) only for you.
+
+---
+
+* Solidity (Zama FHEVM): `@fhevm/solidity` (official library)
+* Relayer SDK: `relayer-sdk-js@0.2.0`
+* Ethers v6
+
+---
+
+## 📁 Structure
+
+```
+frontend/
+  public/
+    index.html        # single‑file UI
+contracts/
+  EncryptedInterestSubscription.sol
+hardhat.config.ts | .js
+scripts/
 ```
 
 ---
 
-## Troubleshooting
-
-* **`Policy not set`** — call `setPolicyEncrypted` (or `setPolicyPlain` for dev) as **owner** first.
-* **WASM/Relayer errors** — ensure COOP/COEP meta tags are present and call `await initSDK()` before `createInstance(...)`.
-* **Decryption fails** — only the **employee (msg.sender)** can decrypt. Confirm your address and the EIP‑712 signature parameters (contract list includes this contract address).
-* **Compilation issues** — enable `viaIR: true` and optimizer; avoid adding FHE ops in view/pure.
-
----
-
-## Security
-
-* Do not log plaintext KPI/bonus data in the UI.
-* Keep `@zama-fhe/relayer-sdk` pinned to `0.2.0` for reproducibility.
-* Review and audit before production use.
-
----
-
-## License
+## 📄 License
 
 MIT — see `LICENSE`.
+
